@@ -1,9 +1,5 @@
-import InputError from '@/Components/InputError';
-import InputLabel from '@/Components/InputLabel';
-import PrimaryButton from '@/Components/PrimaryButton';
-import TextInput from '@/Components/TextInput';
-import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
+import DmsGuestLayout from '@/Layouts/DmsGuestLayout';
 
 export default function Register() {
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -13,108 +9,103 @@ export default function Register() {
         password_confirmation: '',
     });
 
-    const submit = (e) => {
+    function submit(e) {
         e.preventDefault();
-
         post(route('register'), {
             onFinish: () => reset('password', 'password_confirmation'),
         });
-    };
+    }
 
     return (
-        <GuestLayout>
-            <Head title="Register" />
+        <DmsGuestLayout title="Create an account" subtitle="Join Webfocus DMS to manage your documents.">
+            <Head title="Register — Webfocus DMS" />
 
             <form onSubmit={submit}>
-                <div>
-                    <InputLabel htmlFor="name" value="Name" />
-
-                    <TextInput
-                        id="name"
-                        name="name"
+                <Field label="Full Name" error={errors.name}>
+                    <input
+                        autoFocus
+                        type="text"
                         value={data.name}
-                        className="mt-1 block w-full"
+                        onChange={e => setData('name', e.target.value)}
+                        placeholder="Juan Dela Cruz"
+                        style={inputSt}
                         autoComplete="name"
-                        isFocused={true}
-                        onChange={(e) => setData('name', e.target.value)}
                         required
                     />
+                </Field>
 
-                    <InputError message={errors.name} className="mt-2" />
-                </div>
-
-                <div className="mt-4">
-                    <InputLabel htmlFor="email" value="Email" />
-
-                    <TextInput
-                        id="email"
+                <Field label="Email Address" error={errors.email}>
+                    <input
                         type="email"
-                        name="email"
                         value={data.email}
-                        className="mt-1 block w-full"
+                        onChange={e => setData('email', e.target.value)}
+                        placeholder="you@example.com"
+                        style={inputSt}
                         autoComplete="username"
-                        onChange={(e) => setData('email', e.target.value)}
                         required
                     />
+                </Field>
 
-                    <InputError message={errors.email} className="mt-2" />
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                    <Field label="Password" error={errors.password} style={{ flex: 1 }}>
+                        <input
+                            type="password"
+                            value={data.password}
+                            onChange={e => setData('password', e.target.value)}
+                            placeholder="••••••••"
+                            style={inputSt}
+                            autoComplete="new-password"
+                            required
+                        />
+                    </Field>
+                    <Field label="Confirm Password" error={errors.password_confirmation} style={{ flex: 1 }}>
+                        <input
+                            type="password"
+                            value={data.password_confirmation}
+                            onChange={e => setData('password_confirmation', e.target.value)}
+                            placeholder="••••••••"
+                            style={inputSt}
+                            autoComplete="new-password"
+                            required
+                        />
+                    </Field>
                 </div>
 
-                <div className="mt-4">
-                    <InputLabel htmlFor="password" value="Password" />
+                <button type="submit" disabled={processing} style={{ ...btnSt, background: processing ? '#a5b4fc' : '#6366f1', cursor: processing ? 'not-allowed' : 'pointer', marginTop: '0.5rem' }}>
+                    {processing ? 'Creating account…' : 'Create Account'}
+                </button>
 
-                    <TextInput
-                        id="password"
-                        type="password"
-                        name="password"
-                        value={data.password}
-                        className="mt-1 block w-full"
-                        autoComplete="new-password"
-                        onChange={(e) => setData('password', e.target.value)}
-                        required
-                    />
-
-                    <InputError message={errors.password} className="mt-2" />
-                </div>
-
-                <div className="mt-4">
-                    <InputLabel
-                        htmlFor="password_confirmation"
-                        value="Confirm Password"
-                    />
-
-                    <TextInput
-                        id="password_confirmation"
-                        type="password"
-                        name="password_confirmation"
-                        value={data.password_confirmation}
-                        className="mt-1 block w-full"
-                        autoComplete="new-password"
-                        onChange={(e) =>
-                            setData('password_confirmation', e.target.value)
-                        }
-                        required
-                    />
-
-                    <InputError
-                        message={errors.password_confirmation}
-                        className="mt-2"
-                    />
-                </div>
-
-                <div className="mt-4 flex items-center justify-end">
-                    <Link
-                        href={route('login')}
-                        className="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                    >
-                        Already registered?
+                <p style={{ textAlign: 'center', marginTop: '1.25rem', fontSize: '0.85rem', color: '#64748b' }}>
+                    Already have an account?{' '}
+                    <Link href={route('login')} style={{ color: '#6366f1', fontWeight: 600, textDecoration: 'none' }}>
+                        Sign in
                     </Link>
-
-                    <PrimaryButton className="ms-4" disabled={processing}>
-                        Register
-                    </PrimaryButton>
-                </div>
+                </p>
             </form>
-        </GuestLayout>
+        </DmsGuestLayout>
+    );
+}
+
+const inputSt = {
+    width: '100%', padding: '0.6rem 0.85rem', fontSize: '0.875rem',
+    border: '1px solid #cbd5e1', borderRadius: 8, color: '#1e293b',
+    outline: 'none', boxSizing: 'border-box', background: '#fff',
+};
+const btnSt = {
+    width: '100%', padding: '0.65rem 1rem',
+    color: '#fff', fontWeight: 600, fontSize: '0.9rem',
+    borderRadius: 8, border: 'none', transition: 'background 0.15s',
+    letterSpacing: '0.01em',
+};
+
+function Field({ label, error, style: wrapStyle, children }) {
+    return (
+        <div style={{ marginBottom: '1.1rem', ...wrapStyle }}>
+            <label style={{ fontWeight: 500, fontSize: '0.8rem', color: '#475569', display: 'block', marginBottom: '0.4rem' }}>
+                {label}
+            </label>
+            {children}
+            {error && <p style={{ color: '#ef4444', fontSize: '0.76rem', marginTop: 4 }}>{error}</p>}
+        </div>
     );
 }

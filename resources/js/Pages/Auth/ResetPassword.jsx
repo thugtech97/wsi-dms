@@ -1,94 +1,84 @@
-import InputError from '@/Components/InputError';
-import InputLabel from '@/Components/InputLabel';
-import PrimaryButton from '@/Components/PrimaryButton';
-import TextInput from '@/Components/TextInput';
-import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, useForm } from '@inertiajs/react';
+import DmsGuestLayout from '@/Layouts/DmsGuestLayout';
 
 export default function ResetPassword({ token, email }) {
     const { data, setData, post, processing, errors, reset } = useForm({
-        token: token,
-        email: email,
+        token,
+        email,
         password: '',
         password_confirmation: '',
     });
 
-    const submit = (e) => {
+    function submit(e) {
         e.preventDefault();
-
         post(route('password.store'), {
             onFinish: () => reset('password', 'password_confirmation'),
         });
-    };
+    }
 
     return (
-        <GuestLayout>
-            <Head title="Reset Password" />
+        <DmsGuestLayout title="Set a new password" subtitle="Choose a strong password for your account.">
+            <Head title="Reset Password — Webfocus DMS" />
 
             <form onSubmit={submit}>
-                <div>
-                    <InputLabel htmlFor="email" value="Email" />
-
-                    <TextInput
-                        id="email"
+                <Field label="Email Address" error={errors.email}>
+                    <input
                         type="email"
-                        name="email"
                         value={data.email}
-                        className="mt-1 block w-full"
+                        onChange={e => setData('email', e.target.value)}
+                        style={inputSt}
                         autoComplete="username"
-                        onChange={(e) => setData('email', e.target.value)}
+                        required
                     />
+                </Field>
 
-                    <InputError message={errors.email} className="mt-2" />
-                </div>
-
-                <div className="mt-4">
-                    <InputLabel htmlFor="password" value="Password" />
-
-                    <TextInput
-                        id="password"
+                <Field label="New Password" error={errors.password}>
+                    <input
+                        autoFocus
                         type="password"
-                        name="password"
                         value={data.password}
-                        className="mt-1 block w-full"
+                        onChange={e => setData('password', e.target.value)}
+                        placeholder="••••••••"
+                        style={inputSt}
                         autoComplete="new-password"
-                        isFocused={true}
-                        onChange={(e) => setData('password', e.target.value)}
+                        required
                     />
+                </Field>
 
-                    <InputError message={errors.password} className="mt-2" />
-                </div>
-
-                <div className="mt-4">
-                    <InputLabel
-                        htmlFor="password_confirmation"
-                        value="Confirm Password"
-                    />
-
-                    <TextInput
+                <Field label="Confirm New Password" error={errors.password_confirmation}>
+                    <input
                         type="password"
-                        id="password_confirmation"
-                        name="password_confirmation"
                         value={data.password_confirmation}
-                        className="mt-1 block w-full"
+                        onChange={e => setData('password_confirmation', e.target.value)}
+                        placeholder="••••••••"
+                        style={inputSt}
                         autoComplete="new-password"
-                        onChange={(e) =>
-                            setData('password_confirmation', e.target.value)
-                        }
+                        required
                     />
+                </Field>
 
-                    <InputError
-                        message={errors.password_confirmation}
-                        className="mt-2"
-                    />
-                </div>
-
-                <div className="mt-4 flex items-center justify-end">
-                    <PrimaryButton className="ms-4" disabled={processing}>
-                        Reset Password
-                    </PrimaryButton>
-                </div>
+                <button type="submit" disabled={processing} style={{ width: '100%', padding: '0.65rem 1rem', background: processing ? '#a5b4fc' : '#6366f1', color: '#fff', fontWeight: 600, fontSize: '0.9rem', borderRadius: 8, border: 'none', cursor: processing ? 'not-allowed' : 'pointer', marginTop: '0.25rem' }}>
+                    {processing ? 'Resetting…' : 'Reset Password'}
+                </button>
             </form>
-        </GuestLayout>
+        </DmsGuestLayout>
+    );
+}
+
+const inputSt = {
+    width: '100%', padding: '0.6rem 0.85rem', fontSize: '0.875rem',
+    border: '1px solid #cbd5e1', borderRadius: 8, color: '#1e293b',
+    outline: 'none', boxSizing: 'border-box', background: '#fff',
+};
+
+function Field({ label, error, children }) {
+    return (
+        <div style={{ marginBottom: '1.1rem' }}>
+            <label style={{ fontWeight: 500, fontSize: '0.8rem', color: '#475569', display: 'block', marginBottom: '0.4rem' }}>
+                {label}
+            </label>
+            {children}
+            {error && <p style={{ color: '#ef4444', fontSize: '0.76rem', marginTop: 4 }}>{error}</p>}
+        </div>
     );
 }

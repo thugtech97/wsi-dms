@@ -1,10 +1,5 @@
-import Checkbox from '@/Components/Checkbox';
-import InputError from '@/Components/InputError';
-import InputLabel from '@/Components/InputLabel';
-import PrimaryButton from '@/Components/PrimaryButton';
-import TextInput from '@/Components/TextInput';
-import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
+import DmsGuestLayout from '@/Layouts/DmsGuestLayout';
 
 export default function Login({ status, canResetPassword }) {
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -13,88 +8,106 @@ export default function Login({ status, canResetPassword }) {
         remember: false,
     });
 
-    const submit = (e) => {
+    function submit(e) {
         e.preventDefault();
-
-        post(route('login'), {
-            onFinish: () => reset('password'),
-        });
-    };
+        post(route('login'), { onFinish: () => reset('password') });
+    }
 
     return (
-        <GuestLayout>
-            <Head title="Log in" />
+        <DmsGuestLayout title="Welcome back" subtitle="Sign in to your account to continue.">
+            <Head title="Sign In — Webfocus DMS" />
 
             {status && (
-                <div className="mb-4 text-sm font-medium text-green-600">
-                    {status}
-                </div>
+                <div style={alertStyle('#f0fdf4', '#16a34a', '#bbf7d0')}>{status}</div>
             )}
 
             <form onSubmit={submit}>
-                <div>
-                    <InputLabel htmlFor="email" value="Email" />
-
-                    <TextInput
-                        id="email"
+                <Field label="Email Address" error={errors.email}>
+                    <input
+                        autoFocus
                         type="email"
-                        name="email"
                         value={data.email}
-                        className="mt-1 block w-full"
+                        onChange={e => setData('email', e.target.value)}
+                        placeholder="you@example.com"
+                        style={inputSt}
                         autoComplete="username"
-                        isFocused={true}
-                        onChange={(e) => setData('email', e.target.value)}
+                        required
                     />
+                </Field>
 
-                    <InputError message={errors.email} className="mt-2" />
-                </div>
-
-                <div className="mt-4">
-                    <InputLabel htmlFor="password" value="Password" />
-
-                    <TextInput
-                        id="password"
+                <Field label="Password" error={errors.password}>
+                    <input
                         type="password"
-                        name="password"
                         value={data.password}
-                        className="mt-1 block w-full"
+                        onChange={e => setData('password', e.target.value)}
+                        placeholder="••••••••"
+                        style={inputSt}
                         autoComplete="current-password"
-                        onChange={(e) => setData('password', e.target.value)}
+                        required
                     />
+                </Field>
 
-                    <InputError message={errors.password} className="mt-2" />
-                </div>
-
-                <div className="mt-4 block">
-                    <label className="flex items-center">
-                        <Checkbox
-                            name="remember"
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: '0.85rem', color: '#475569' }}>
+                        <input
+                            type="checkbox"
                             checked={data.remember}
-                            onChange={(e) =>
-                                setData('remember', e.target.checked)
-                            }
+                            onChange={e => setData('remember', e.target.checked)}
+                            style={{ accentColor: '#6366f1', width: 15, height: 15 }}
                         />
-                        <span className="ms-2 text-sm text-gray-600">
-                            Remember me
-                        </span>
+                        Remember me
                     </label>
-                </div>
-
-                <div className="mt-4 flex items-center justify-end">
                     {canResetPassword && (
-                        <Link
-                            href={route('password.request')}
-                            className="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                        >
-                            Forgot your password?
+                        <Link href={route('password.request')} style={{ fontSize: '0.82rem', color: '#6366f1', textDecoration: 'none', fontWeight: 500 }}>
+                            Forgot password?
                         </Link>
                     )}
-
-                    <PrimaryButton className="ms-4" disabled={processing}>
-                        Log in
-                    </PrimaryButton>
                 </div>
+
+                <button type="submit" disabled={processing} style={btnSt(processing)}>
+                    {processing ? 'Signing in…' : 'Sign In'}
+                </button>
+
+                <p style={{ textAlign: 'center', marginTop: '1.25rem', fontSize: '0.85rem', color: '#64748b' }}>
+                    Don't have an account?{' '}
+                    <Link href={route('register')} style={{ color: '#6366f1', fontWeight: 600, textDecoration: 'none' }}>
+                        Create one
+                    </Link>
+                </p>
             </form>
-        </GuestLayout>
+        </DmsGuestLayout>
+    );
+}
+
+const inputSt = {
+    width: '100%', padding: '0.6rem 0.85rem', fontSize: '0.875rem',
+    border: '1px solid #cbd5e1', borderRadius: 8, color: '#1e293b',
+    outline: 'none', boxSizing: 'border-box', background: '#fff',
+    transition: 'border-color 0.15s',
+};
+const btnSt = (disabled) => ({
+    width: '100%', padding: '0.65rem 1rem',
+    background: disabled ? '#a5b4fc' : '#6366f1',
+    color: '#fff', fontWeight: 600, fontSize: '0.9rem',
+    borderRadius: 8, border: 'none',
+    cursor: disabled ? 'not-allowed' : 'pointer',
+    transition: 'background 0.15s',
+    letterSpacing: '0.01em',
+});
+const alertStyle = (bg, color, border) => ({
+    background: bg, color, border: `1px solid ${border}`,
+    borderRadius: 8, padding: '0.65rem 0.9rem', fontSize: '0.82rem',
+    marginBottom: '1.25rem',
+});
+
+function Field({ label, error, children }) {
+    return (
+        <div style={{ marginBottom: '1.1rem' }}>
+            <label style={{ fontWeight: 500, fontSize: '0.8rem', color: '#475569', display: 'block', marginBottom: '0.4rem' }}>
+                {label}
+            </label>
+            {children}
+            {error && <p style={{ color: '#ef4444', fontSize: '0.76rem', marginTop: 4 }}>{error}</p>}
+        </div>
     );
 }

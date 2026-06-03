@@ -33,8 +33,14 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'auth' => [
-                'user' => $request->user(),
+                'user' => $request->user() ? array_merge(
+                    $request->user()->only('id', 'name', 'email'),
+                    ['role' => $request->user()->roles->first()?->name ?? 'user']
+                ) : null,
             ],
+            'unreadNotificationsCount' => fn () => $request->user()
+                ? $request->user()->unreadNotifications()->count()
+                : 0,
             'ziggy' => fn () => [
                 ...(new Ziggy)->toArray(),
                 'location' => $request->url(),

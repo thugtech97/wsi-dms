@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enterprise Document Management Dashboard</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+    <!-- Modern Inter Typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            background-color: #f6f8fa;
+            font-family: 'Inter', sans-serif;
+            color: #334155;
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        .form-control, .form-select, .btn, .card, tr, .nav-link {
+            transition: all 0.2s ease-in-out;
+        }
+
+        /* Top Header Styling */
+        .navbar-custom {
+            background-color: #ffffff;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 0.6rem 1.5rem;
+            position: sticky;
+            top: 0;
+            z-index: 1020;
+        }
+        .navbar-custom .navbar-brand {
+            color: #0f172a;
+            font-weight: 600;
+            font-size: 1.05rem;
+        }
+
+        /* Scan Search Styling */
+        .scan-search-group {
+            max-width: 400px;
+            width: 100%;
+        }
+        .scan-search-group .input-group-text {
+            background-color: #f8fafc;
+            color: #6366f1;
+            border-color: #cbd5e1;
+            font-weight: 600;
+        }
+
+        /* Left Navigation Sidebar Layout */
+        .menu-sidebar {
+            background-color: #ffffff;
+            border-right: 1px solid #e2e8f0;
+            height: calc(100vh - 62px);
+            position: sticky;
+            top: 62px;
+            padding: 1.5rem 0.75rem;
+        }
+        .menu-sidebar .nav-link {
+            color: #475569;
+            font-size: 0.88rem;
+            font-weight: 500;
+            padding: 0.7rem 1rem;
+            border-radius: 6px;
+            margin-bottom: 0.25rem;
+            display: flex;
+            align-items: center;
+        }
+        .menu-sidebar .nav-link i {
+            width: 20px;
+            margin-right: 0.75rem;
+            font-size: 1rem;
+            color: #94a3b8;
+        }
+        .menu-sidebar .nav-link:hover {
+            background-color: #f1f5f9;
+            color: #0f172a;
+        }
+        .menu-sidebar .nav-link:hover i {
+            color: #6366f1;
+        }
+        .menu-sidebar .nav-link.active {
+            background-color: #eef2ff;
+            color: #4f46e5;
+        }
+        .menu-sidebar .nav-link.active i {
+            color: #4f46e5;
+        }
+        .menu-sidebar .nav-divider {
+            height: 1px;
+            background-color: #e2e8f0;
+            margin: 1rem 0;
+        }
+
+        /* Card Elements */
+        .card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+        }
+        .card-header {
+            background-color: #ffffff;
+            border-bottom: 1px solid #f1f5f9;
+            font-weight: 600;
+            color: #1e293b;
+            padding: 1rem 1.25rem;
+            font-size: 0.9rem;
+        }
+        .card-body {
+            padding: 1.25rem;
+        }
+
+        /* Form Layout Controls */
+        .form-label {
+            font-weight: 500;
+            font-size: 0.8rem;
+            color: #64748b;
+            margin-bottom: 0.35rem;
+        }
+        .form-control, .form-select {
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.85rem;
+            color: #1e293b;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+        }
+
+        /* Smooth Indigo Buttons */
+        .btn-indigo {
+            background-color: #6366f1;
+            color: #ffffff;
+            font-weight: 500;
+            font-size: 0.85rem;
+            border-radius: 6px;
+            padding: 0.5rem 1rem;
+            border: none;
+        }
+        .btn-indigo:hover {
+            background-color: #4f46e5;
+            color: #ffffff;
+        }
+        .btn-outline-secondary {
+            border-color: #e2e8f0;
+            color: #64748b;
+            font-size: 0.85rem;
+        }
+        .btn-outline-secondary:hover {
+            background-color: #f8fafc;
+            border-color: #cbd5e1;
+            color: #334155;
+        }
+
+        /* Minimalistic Badges */
+        .badge-soft {
+            font-weight: 500;
+            padding: 0.3rem 0.55rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+        }
+        .bg-soft-indigo { background-color: #eef2ff; color: #4f46e5; }
+        .bg-soft-green { background-color: #f0fdf4; color: #16a34a; }
+        .bg-soft-amber { background-color: #fffbeb; color: #d97706; }
+        .bg-soft-gray { background-color: #f1f5f9; color: #475569; }
+
+        /* Document Table Layouts */
+        .table th {
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.7rem;
+            letter-spacing: 0.5px;
+            color: #64748b;
+            padding: 0.85rem 1.25rem;
+            border-bottom: 2px solid #f1f5f9;
+            background-color: #f8fafc;
+        }
+        .table td {
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 0.85rem;
+            color: #334155;
+        }
+        .table tbody tr:hover {
+            background-color: #fafafa;
+        }
+
+        /* Asset Graphic Boxes */
+        .code-container {
+            display: inline-block;
+            text-align: center;
+        }
+        .code-preview {
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            padding: 4px;
+            background: #ffffff;
+        }
+        .qr-size { width: 65px; height: 65px; }
+        .bar-size { width: 90px; height: 32px; object-fit: contain; }
+        .code-id {
+            font-size: 0.7rem;
+            color: #94a3b8;
+            margin-top: 0.2rem;
+            font-family: monospace;
+            letter-spacing: 0.3px;
+        }
+
+        /* System Notice Disclaimer */
+        .disclaimer-box {
+            background-color: #fffbeb;
+            border-left: 3px solid #f59e0b;
+            color: #b45309;
+            border-radius: 4px;
+            padding: 0.75rem;
+            font-size: 0.78rem;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Professional Navbar Header -->
+    <nav class="navbar navbar-custom shadow-sm">
+        <div class="container-fluid d-flex justify-content-between align-items-center">
+            <a class="navbar-brand d-flex align-items-center" href="#">
+                <i class="fa-solid fa-folder-tree me-2 text-muted"></i>
+                <span>Webfocus Document Management System</span>
+            </a>
+            
+            <!-- Scan Code Search Box -->
+            <div class="input-group input-group-sm scan-search-group mx-3">
+                <span class="input-group-text"><i class="fa-solid fa-barcode"></i></span>
+                <input type="text" class="form-control" id="scanSearchBox" placeholder="Scan Barcode or QR Code to quickly find...">
+                <button class="btn btn-outline-secondary border-start-0" type="button" id="btnClearScan" title="Clear Scan"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div>
+                <small class="text-muted"><i class="fa-regular fa-id-badge me-1"></i> Juan Dela Cruz</small>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid px-0">
+        <div class="row g-0">
+            
+            <!-- COLUMN 1: Menu Sidebar (Left) -->
+            <div class="col-xl-2 col-lg-3 col-md-4">
+                <div class="menu-sidebar">
+                    <nav class="nav flex-column">
+                        <a class="nav-link" href="#"><i class="fa-solid fa-users"></i>User Management</a>
+                        <a class="nav-link active" href="#"><i class="fa-solid fa-file-lines"></i>Documents</a>
+                        <a class="nav-link" href="#"><i class="fa-solid fa-tags"></i>Document Types</a>
+                        <a class="nav-link" href="#"><i class="fa-solid fa-chart-pie"></i>Reports</a>
+                        <a class="nav-link" href="#">
+                            <i class="fa-solid fa-bell"></i>Notifications
+                            <span class="badge bg-danger ms-auto rounded-pill" style="font-size: 0.65rem;">3</span>
+                        </a>
+                        <div class="nav-divider"></div>
+                        <a class="nav-link" href="#"><i class="fa-solid fa-user-gear"></i>User Profile</a>
+                        <a class="nav-link text-danger" href="#"><i class="fa-solid fa-right-from-bracket text-danger"></i>Logout</a>
+                    </nav>
+                </div>
+            </div>
+
+            <!-- COLUMN 2: Main Content Area (Center) -->
+            <div class="col-xl-7 col-lg-6 col-md-8 px-4 pt-4">
+                
+                <!-- Filter Section Layout Grid -->
+                <div class="card mb-4">
+                    <div class="card-body py-3">
+                        <form id="filterForm" class="row g-3 align-items-center">
+                            <div class="col-md-4">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text bg-white border-end-0 text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
+                                    <input type="text" class="form-control border-start-0" id="searchName" placeholder="Search by document name...">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <select class="form-select form-select-sm" id="filterType">
+                                    <option value="">All Categories</option>
+                                    <option value="Invoice">Invoice</option>
+                                    <option value="Contract">Contract</option>
+                                    <option value="Legal">Legal Agreement</option>
+                                    <option value="HR Document">HR Document</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 d-flex gap-2">
+                                <input type="text" class="form-control form-control-sm" id="searchOwner" placeholder="Filter by owner...">
+                                <button type="button" id="btnReset" class="btn btn-sm btn-outline-secondary text-nowrap">Clear Filters</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Main Grid Index Table Frame -->
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span class="text-secondary"><i class="fa-solid fa-list-check me-2 text-muted"></i> Core Index Repositories</span>
+                        <span class="badge bg-soft-gray text-dark px-2 py-1" id="docCount" style="font-weight: 500;">10 items</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table align-middle">
+                            <thead>
+                                <tr>
+                                    <th style="width: 120px;">Asset Target</th>
+                                    <th>Document Identifier</th>
+                                    <th>Type</th>
+                                    <th>Storage Location</th>
+                                    <th>Owner Space</th>
+                                    <th>Indexed On</th>
+                                    <th style="width: 50px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="documentTableBody">
+                                <!-- Row 1 -->
+                                <tr>
+                                    <td>
+                                        <div class="code-container">
+                                            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/d0/QR_code_for_mobile_English_Wikipedia.svg/250px-QR_code_for_mobile_English_Wikipedia.svg.png" alt="QR" class="code-preview qr-size">
+                                            <div class="code-id">#QR-90812</div>
+                                        </div>
+                                    </td>
+                                    <td><span class="fw-semibold text-dark">Vendor_Agreement_2026.pdf</span></td>
+                                    <td><span class="badge badge-soft bg-soft-indigo">Contract</span></td>
+                                    <td><small class="text-muted">Cloud://legal-prod</small></td>
+                                    <td>Alex Mercer</td>
+                                    <td>May 20, 2026</td>
+                                    <td><button class="btn btn-sm text-muted p-1"><i class="fa-solid fa-chevron-right"></i></button></td>
+                                </tr>
+                                <!-- Row 2 -->
+                                <tr>
+                                    <td>
+                                        <div class="code-container">
+                                            <img src="https://barcode.orcascan.com/?type=code128&data=BC-33412" alt="Barcode" class="code-preview bar-size">
+                                            <div class="code-id">#BC-33412</div>
+                                        </div>
+                                    </td>
+                                    <td><span class="fw-semibold text-dark">Q1_Financial_Statement.xlsx</span></td>
+                                    <td><span class="badge badge-soft bg-soft-green">Invoice</span></td>
+                                    <td><small class="text-muted">Cloud://finance-node</small></td>
+                                    <td>Sarah Jenkins</td>
+                                    <td>May 18, 2026</td>
+                                    <td><button class="btn btn-sm text-muted p-1"><i class="fa-solid fa-chevron-right"></i></button></td>
+                                </tr>
+                                <!-- Row 3 -->
+                                <tr>
+                                    <td>
+                                        <div class="code-container">
+                                            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/d0/QR_code_for_mobile_English_Wikipedia.svg/250px-QR_code_for_mobile_English_Wikipedia.svg.png" alt="QR" class="code-preview qr-size">
+                                            <div class="code-id">#QR-11029</div>
+                                        </div>
+                                    </td>
+                                    <td><span class="fw-semibold text-dark">Employee_Handbook_v4.pdf</span></td>
+                                    <td><span class="badge badge-soft bg-soft-gray">HR Document</span></td>
+                                    <td><small class="text-muted">Cloud://intranet-hr</small></td>
+                                    <td>David Vance</td>
+                                    <td>May 15, 2026</td>
+                                    <td><button class="btn btn-sm text-muted p-1"><i class="fa-solid fa-chevron-right"></i></button></td>
+                                </tr>
+                                <!-- Row 4 -->
+                                <tr>
+                                    <td>
+                                        <div class="code-container">
+                                            <img src="https://barcode.orcascan.com/?type=code128&data=BC-44129" alt="Barcode" class="code-preview bar-size">
+                                            <div class="code-id">#BC-44129</div>
+                                        </div>
+                                    </td>
+                                    <td><span class="fw-semibold text-dark">Client_Onboarding_Form.docx</span></td>
+                                    <td><span class="badge badge-soft bg-soft-indigo">Contract</span></td>
+                                    <td><small class="text-muted">Cloud://crm-docs</small></td>
+                                    <td>Marcus Vance</td>
+                                    <td>May 12, 2026</td>
+                                    <td><button class="btn btn-sm text-muted p-1"><i class="fa-solid fa-chevron-right"></i></button></td>
+                                </tr>
+                                <!-- Row 5 -->
+                                <tr>
+                                    <td>
+                                        <div class="code-container">
+                                            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/d0/QR_code_for_mobile_English_Wikipedia.svg/250px-QR_code_for_mobile_English_Wikipedia.svg.png" alt="QR" class="code-preview qr-size">
+                                            <div class="code-id">#QR-88291</div>
+                                        </div>
+                                    </td>
+                                    <td><span class="fw-semibold text-dark">ND_Agreement_External.pdf</span></td>
+                                    <td><span class="badge badge-soft bg-soft-amber">Legal Agreement</span></td>
+                                    <td><small class="text-muted">Cloud://legal-vault</small></td>
+                                    <td>Elena Rostova</td>
+                                    <td>May 11, 2026</td>
+                                    <td><button class="btn btn-sm text-muted p-1"><i class="fa-solid fa-chevron-right"></i></button></td>
+                                </tr>
+                                <!-- Row 6 -->
+                                <tr>
+                                    <td>
+                                        <div class="code-container">
+                                            <img src="https://barcode.orcascan.com/?type=code128&data=BC-19283" alt="Barcode" class="code-preview bar-size">
+                                            <div class="code-id">#BC-19283</div>
+                                        </div>
+                                    </td>
+                                    <td><span class="fw-semibold text-dark">Supplier_Invoice_INV202.pdf</span></td>
+                                    <td><span class="badge badge-soft bg-soft-green">Invoice</span></td>
+                                    <td><small class="text-muted">Cloud://ap-ledger</small></td>
+                                    <td>John Doe</td>
+                                    <td>May 09, 2026</td>
+                                    <td><button class="btn btn-sm text-muted p-1"><i class="fa-solid fa-chevron-right"></i></button></td>
+                                </tr>
+                                <!-- Row 7 -->
+                                <tr>
+                                    <td>
+                                        <div class="code-container">
+                                            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/d0/QR_code_for_mobile_English_Wikipedia.svg/250px-QR_code_for_mobile_English_Wikipedia.svg.png" alt="QR" class="code-preview qr-size">
+                                            <div class="code-id">#QR-55461</div>
+                                        </div>
+                                    </td>
+                                    <td><span class="fw-semibold text-dark">Health_Safety_Protocols.pdf</span></td>
+                                    <td><span class="badge badge-soft bg-soft-gray">HR Document</span></td>
+                                    <td><small class="text-muted">Cloud://compliance</small></td>
+                                    <td>Sarah Jenkins</td>
+                                    <td>May 06, 2026</td>
+                                    <td><button class="btn btn-sm text-muted p-1"><i class="fa-solid fa-chevron-right"></i></button></td>
+                                </tr>
+                                <!-- Row 8 -->
+                                <tr>
+                                    <td>
+                                        <div class="code-container">
+                                            <img src="https://barcode.orcascan.com/?type=code128&data=BC-77281" alt="Barcode" class="code-preview bar-size">
+                                            <div class="code-id">#BC-77281</div>
+                                        </div>
+                                    </td>
+                                    <td><span class="fw-semibold text-dark">Marketing_Retainer_2026.pdf</span></td>
+                                    <td><span class="badge badge-soft bg-soft-indigo">Contract</span></td>
+                                    <td><small class="text-muted">Cloud://marketing-vault</small></td>
+                                    <td>Chloe Frazier</td>
+                                    <td>May 04, 2026</td>
+                                    <td><button class="btn btn-sm text-muted p-1"><i class="fa-solid fa-chevron-right"></i></button></td>
+                                </tr>
+                                <!-- Row 9 -->
+                                <tr>
+                                    <td>
+                                        <div class="code-container">
+                                            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/d0/QR_code_for_mobile_English_Wikipedia.svg/250px-QR_code_for_mobile_English_Wikipedia.svg.png" alt="QR" class="code-preview qr-size">
+                                            <div class="code-id">#QR-66152</div>
+                                        </div>
+                                    </td>
+                                    <td><span class="fw-semibold text-dark">Patent_Application_Draft.docx</span></td>
+                                    <td><span class="badge badge-soft bg-soft-amber">Legal Agreement</span></td>
+                                    <td><small class="text-muted">Cloud://ip-legal</small></td>
+                                    <td>Dr. Aris Thorne</td>
+                                    <td>Apr 28, 2026</td>
+                                    <td><button class="btn btn-sm text-muted p-1"><i class="fa-solid fa-chevron-right"></i></button></td>
+                                </tr>
+                                <!-- Row 10 -->
+                                <tr>
+                                    <td>
+                                        <div class="code-container">
+                                            <img src="https://barcode.orcascan.com/?type=code128&data=BC-22918" alt="Barcode" class="code-preview bar-size">
+                                            <div class="code-id">#BC-22918</div>
+                                        </div>
+                                    </td>
+                                    <td><span class="fw-semibold text-dark">Utility_BOM_Manifest.xlsx</span></td>
+                                    <td><span class="badge badge-soft bg-soft-green">Invoice</span></td>
+                                    <td><small class="text-muted">Cloud://ops-inventory</small></td>
+                                    <td>Neal Caffrey</td>
+                                    <td>Apr 25, 2026</td>
+                                    <td><button class="btn btn-sm text-muted p-1"><i class="fa-solid fa-chevron-right"></i></button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- COLUMN 3: Right Sidebar (Upload Panel) -->
+            <div class="col-xl-3 col-lg-3 col-md-12 p-4">
+                <div class="card position-sticky" style="top: 86px;">
+                    <div class="card-header">
+                        <i class="fa-solid fa-cloud-arrow-up me-2 text-muted"></i> Upload Document
+                    </div>
+                    <div class="card-body">
+                        <form id="uploadForm">
+                            <div class="mb-3">
+                                <label for="documentFile" class="form-label">Select Target File</label>
+                                <input class="form-control" type="file" id="documentFile" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="docType" class="form-label">Document Classification</label>
+                                <select class="form-select" id="docType" required>
+                                    <option value="" selected disabled>Choose type...</option>
+                                    <option value="Invoice">Invoice</option>
+                                    <option value="Contract">Contract</option>
+                                    <option value="Legal">Legal Agreement</option>
+                                    <option value="HR Document">HR Document</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label d-block">Tracking Generation Mode</label>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="codeType" id="typeQR" value="QR" checked>
+                                    <label class="form-check-label text-secondary small" for="typeQR">QR Code</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="codeType" id="typeBarcode" value="Barcode">
+                                    <label class="form-check-label text-secondary small" for="typeBarcode">Barcode</label>
+                                </div>
+                            </div>
+
+                            <div class="d-grid mb-3">
+                                <button type="submit" class="btn btn-indigo">
+                                    Upload Document
+                                </button>
+                            </div>
+
+                            <div class="disclaimer-box">
+                                <i class="fa-solid fa-circle-info me-1"></i> 
+                                <strong>Disclaimer:</strong> The corresponding tracking QR or Barcode image will be automatically generated and compiled natively <em>after</em> the target document asset has successfully finished writing to local database clusters.
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Framework Infrastructure Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            
+            // Core Filter Execution Engine
+            function executeCombinedFilters() {
+                let nameVal = $('#searchName').val().toLowerCase();
+                let typeVal = $('#filterType').val().toLowerCase();
+                let ownerVal = $('#searchOwner').val().toLowerCase();
+                let scanVal = $('#scanSearchBox').val().toLowerCase().trim();
+
+                $('#documentTableBody tr').filter(function() {
+                    let rowName = $(this).find('td:nth-child(2)').text().toLowerCase();
+                    let rowType = $(this).find('td:nth-child(3)').text().toLowerCase();
+                    let rowOwner = $(this).find('td:nth-child(5)').text().toLowerCase();
+                    let rowCodeID = $(this).find('.code-id').text().toLowerCase();
+
+                    // Soft normalization checks
+                    if(typeVal === "legal agreement") typeVal = "legal";
+                    if(typeVal === "hr document") typeVal = "hr";
+
+                    let match = rowName.indexOf(nameVal) > -1 && 
+                                rowType.indexOf(typeVal) > -1 && 
+                                rowOwner.indexOf(ownerVal) > -1;
+
+                    // If Scan Search field contains data, include it as an absolute identifier override
+                    if (scanVal !== "") {
+                        match = match && (rowCodeID.indexOf(scanVal) > -1);
+                    }
+                    
+                    $(this).toggle(match);
+                });
+                updateCount();
+            }
+
+            // Input Event Hookups
+            $('#searchName, #filterType, #searchOwner, #scanSearchBox').on('keyup change', function() {
+                executeCombinedFilters();
+            });
+
+            // Clear Scan box control button logic
+            $('#btnClearScan').on('click', function() {
+                $('#scanSearchBox').val('');
+                executeCombinedFilters();
+            });
+
+            // Form Reset Action Hook
+            $('#btnReset').on('click', function() {
+                $('#filterForm')[0].reset();
+                $('#scanSearchBox').val('');
+                $('#documentTableBody tr').show();
+                updateCount();
+            });
+
+            // Dynamic Asset Insertion Handler
+            $('#uploadForm').on('submit', function(e) {
+                e.preventDefault();
+                
+                let fileInput = $('#documentFile').val().split('\\').pop();
+                let docType = $('#docType').val();
+                let codeType = $('input[name="codeType"]:checked').val();
+                let today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+                
+                let randNum = Math.floor(10000 + Math.random() * 90000);
+                let codeLabel = (codeType === 'QR' ? '#QR-' : '#BC-') + randNum;
+                
+                let codeImgMarkup = codeType === 'QR' 
+                    ? `<img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=DOC-${randNum}&ecc=M" alt="QR" class="code-preview qr-size">` 
+                    : `<img src="https://barcode.orcascan.com/?type=code128&data=BC-${randNum}" alt="Barcode" class="code-preview bar-size">`;
+                
+                let badgeClass = 'bg-soft-gray';
+                if(docType === 'Contract') badgeClass = 'bg-soft-indigo';
+                if(docType === 'Invoice') badgeClass = 'bg-soft-green';
+                if(docType === 'Legal Agreement') badgeClass = 'bg-soft-amber';
+
+                let newRow = `
+                    <tr style="opacity: 0;">
+                        <td>
+                            <div class="code-container">
+                                ${codeImgMarkup}
+                                <div class="code-id">${codeLabel}</div>
+                            </div>
+                        </td>
+                        <td><span class="fw-semibold text-dark">${fileInput}</span></td>
+                        <td><span class="badge badge-soft ${badgeClass}">${docType}</span></td>
+                        <td><small class="text-muted">Cloud://default-node</small></td>
+                        <td>Current User</td>
+                        <td>${today}</td>
+                        <td>
+                            <button class="btn btn-sm text-muted p-1"><i class="fa-solid fa-chevron-right"></i></button>
+                        </td>
+                    </tr>
+                `;
+                
+                let $newRow = $(newRow);
+                $('#documentTableBody').prepend($newRow);
+                $newRow.animate({ opacity: 1 }, 400);
+                
+                updateCount();
+                $('#uploadForm')[0].reset();
+            });
+
+            function updateCount() {
+                let visibleRows = $('#documentTableBody tr:visible').length;
+                $('#docCount').text(visibleRows + (visibleRows === 1 ? ' item' : ' items'));
+            }
+        });
+    </script>
+</body>
+</html>
