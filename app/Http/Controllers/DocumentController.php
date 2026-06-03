@@ -34,8 +34,8 @@ class DocumentController extends Controller
                 'indexedOn'   => $d->created_at->format('M d, Y'),
                 'codeType'    => $d->code_type,
                 'codeId'      => $d->code_id,
-                'codeImage'   => Storage::url($d->code_image_path),
-                'fileUrl'     => Storage::url($d->file_path),
+                'codeImage'   => url('storage/' . $d->code_image_path),
+                'fileUrl'     => url('storage/' . $d->file_path),
             ]);
 
         return Inertia::render('Documents/Index', [
