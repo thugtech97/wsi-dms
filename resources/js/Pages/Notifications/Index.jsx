@@ -1,4 +1,4 @@
-import { useForm } from '@inertiajs/react';
+import { Head, useForm } from '@inertiajs/react';
 import DmsLayout from '@/Layouts/DmsLayout';
 
 export default function NotificationsIndex({ notifications }) {
@@ -18,6 +18,7 @@ export default function NotificationsIndex({ notifications }) {
 
     return (
         <DmsLayout activePage="Notifications">
+            <Head title="Notifications" />
             <div style={{ padding: '1.5rem', maxWidth: 760 }}>
                 <div className="flex items-center justify-between" style={{ marginBottom: '1.5rem' }}>
                     <h1 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#0f172a' }}>

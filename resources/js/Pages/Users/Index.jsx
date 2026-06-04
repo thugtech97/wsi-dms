@@ -1,4 +1,4 @@
-import { useForm, usePage } from '@inertiajs/react';
+import { Head, useForm, usePage } from '@inertiajs/react';
 import DmsLayout from '@/Layouts/DmsLayout';
 
 export default function UsersIndex({ users, roles }) {
@@ -7,6 +7,7 @@ export default function UsersIndex({ users, roles }) {
 
     return (
         <DmsLayout activePage="User Management">
+            <Head title="User Management" />
             <div style={{ padding: '1.5rem' }}>
                 <h1 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#0f172a', marginBottom: '1.5rem' }}>User Management</h1>
 

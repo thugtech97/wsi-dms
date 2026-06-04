@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Head } from '@inertiajs/react';
 import DmsLayout from '@/Layouts/DmsLayout';
 import DocumentFilter from '@/Components/Dms/DocumentFilter';
 import DocumentTable from '@/Components/Dms/DocumentTable';
@@ -39,6 +40,7 @@ export default function DocumentsIndex({ documents, documentTypes, filters: serv
 
     return (
         <DmsLayout activePage="Documents" scanValue={scanValue} onScanChange={setScanValue}>
+            <Head title="Documents" />
             <div style={{
                 display: 'flex',
                 flexDirection: stacked ? 'column' : 'row',

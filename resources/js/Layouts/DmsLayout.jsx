@@ -3,10 +3,13 @@ import { Link, usePage } from '@inertiajs/react';
 import { useResponsive } from '@/hooks/useResponsive';
 
 const ALL_NAV_ITEMS = [
-    { label: 'User Management', icon: <UsersIcon />,   routeName: 'users.index',          adminOnly: true },
-    { label: 'Documents',       icon: <DocumentIcon />, routeName: 'documents.index',      adminOnly: false },
-    { label: 'Document Types',  icon: <TagsIcon />,     routeName: 'document-types.index', adminOnly: true },
-    { label: 'Reports',         icon: <ChartIcon />,    routeName: null,                   adminOnly: true },
+    { label: 'Dashboard',       icon: <DashboardIcon />, routeName: 'dashboard',            adminOnly: true },
+    { label: 'User Management', icon: <UsersIcon />,     routeName: 'users.index',          adminOnly: true },
+    { label: 'Documents',       icon: <DocumentIcon />,  routeName: 'documents.index',      adminOnly: false },
+    { label: 'Document Types',  icon: <TagsIcon />,      routeName: 'document-types.index', adminOnly: true },
+    { label: 'Audit Trail',     icon: <AuditIcon />,     routeName: 'audit-trail.index',    adminOnly: true },
+    { label: 'Reports',         icon: <ChartIcon />,     routeName: 'reports.index',        adminOnly: true },
+    { label: 'Settings',        icon: <SettingsIcon />,  routeName: 'settings.index',       adminOnly: true },
 ];
 
 export default function DmsLayout({ activePage, scanValue = '', onScanChange, children }) {
@@ -275,6 +278,15 @@ function TagsIcon() {
 }
 function ChartIcon() {
     return <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" d="M21.21 15.89A10 10 0 118 2.83"/><path strokeLinecap="round" d="M22 12A10 10 0 0012 2v10z"/></svg>;
+}
+function DashboardIcon() {
+    return <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>;
+}
+function AuditIcon() {
+    return <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline strokeLinecap="round" points="12 6 12 12 16 14"/></svg>;
+}
+function SettingsIcon() {
+    return <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>;
 }
 function BellIcon() {
     return <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>;

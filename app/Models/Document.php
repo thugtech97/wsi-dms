@@ -4,9 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use OwenIt\Auditing\Contracts\Auditable;
 
-class Document extends Model
+class Document extends Model implements Auditable
 {
+    use \OwenIt\Auditing\Auditable;
+
     protected $fillable = [
         'name',
         'file_path',
@@ -15,6 +18,16 @@ class Document extends Model
         'code_type',
         'code_id',
         'code_image_path',
+        'storage_location',
+    ];
+
+    // Only audit what's meaningful
+    protected $auditInclude = [
+        'name',
+        'document_type_id',
+        'owner_id',
+        'code_type',
+        'code_id',
         'storage_location',
     ];
 

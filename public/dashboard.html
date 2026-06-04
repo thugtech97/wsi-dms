@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enterprise Document Management - Analytics Dashboard</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+    <!-- Modern Inter Typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            background-color: #f6f8fa;
+            font-family: 'Inter', sans-serif;
+            color: #334155;
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        .btn, .card, .nav-link, .quicklink-card {
+            transition: all 0.2s ease-in-out;
+        }
+
+        /* Top Header Styling */
+        .navbar-custom {
+            background-color: #ffffff;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 0.6rem 1.5rem;
+            position: sticky;
+            top: 0;
+            z-index: 1020;
+        }
+        .navbar-custom .navbar-brand {
+            color: #0f172a;
+            font-weight: 600;
+            font-size: 1.05rem;
+        }
+
+        /* Scan Search Styling */
+        .scan-search-group {
+            max-width: 400px;
+            width: 100%;
+        }
+        .scan-search-group .input-group-text {
+            background-color: #f8fafc;
+            color: #6366f1;
+            border-color: #cbd5e1;
+            font-weight: 600;
+        }
+
+        /* Left Navigation Sidebar Layout */
+        .menu-sidebar {
+            background-color: #ffffff;
+            border-right: 1px solid #e2e8f0;
+            height: calc(100vh - 62px);
+            position: sticky;
+            top: 62px;
+            padding: 1.5rem 0.75rem;
+        }
+        .menu-sidebar .nav-link {
+            color: #475569;
+            font-size: 0.88rem;
+            font-weight: 500;
+            padding: 0.7rem 1rem;
+            border-radius: 6px;
+            margin-bottom: 0.25rem;
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+        }
+        .menu-sidebar .nav-link i {
+            width: 20px;
+            margin-right: 0.75rem;
+            font-size: 1rem;
+            color: #94a3b8;
+        }
+        .menu-sidebar .nav-link:hover {
+            background-color: #f1f5f9;
+            color: #0f172a;
+        }
+        .menu-sidebar .nav-link:hover i {
+            color: #6366f1;
+        }
+        .menu-sidebar .nav-link.active {
+            background-color: #eef2ff;
+            color: #4f46e5;
+        }
+        .menu-sidebar .nav-link.active i {
+            color: #4f46e5;
+        }
+        .menu-sidebar .nav-divider {
+            height: 1px;
+            background-color: #e2e8f0;
+            margin: 1rem 0;
+        }
+
+        /* Card Elements */
+        .card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+        }
+        .card-header {
+            background-color: #ffffff;
+            border-bottom: 1px solid #f1f5f9;
+            font-weight: 600;
+            color: #1e293b;
+            padding: 1rem 1.25rem;
+            font-size: 0.9rem;
+        }
+        .card-body {
+            padding: 1.25rem;
+        }
+
+        /* Metrics Display Cards */
+        .metric-icon-box {
+            width: 42px;
+            height: 42px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+        }
+        .metric-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #0f172a;
+            line-height: 1;
+            margin-top: 0.25rem;
+        }
+        .metric-label {
+            font-size: 0.78rem;
+            font-weight: 500;
+            color: #64748b;
+        }
+
+        /* Quicklink Grid Cards */
+        .quicklink-card {
+            border: 1px dashed #cbd5e1;
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+            cursor: pointer;
+            text-decoration: none;
+            display: block;
+            color: #475569;
+        }
+        .quicklink-card:hover {
+            border-style: solid;
+            border-color: #6366f1;
+            background-color: #fbfbfe;
+            transform: translateY(-2px);
+            color: #4f46e5;
+            box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.05);
+        }
+        .quicklink-card i {
+            font-size: 1.25rem;
+            margin-bottom: 0.4rem;
+            display: block;
+        }
+        .quicklink-card span {
+            font-size: 0.82rem;
+            font-weight: 500;
+        }
+
+        /* Dynamic Timeline Styles (Activity & Notifications) */
+        .activity-item {
+            border-left: 2px solid #e2e8f0;
+            padding-left: 1.25rem;
+            padding-bottom: 1.25rem;
+            position: relative;
+        }
+        .activity-item:last-child {
+            padding-bottom: 0;
+            border-left-color: transparent;
+        }
+        .activity-item::before {
+            content: '';
+            position: absolute;
+            left: -6px;
+            top: 4px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #cbd5e1;
+            border: 2px solid #ffffff;
+        }
+        .activity-item.primary::before { background-color: #6366f1; }
+        .activity-item.success::before { background-color: #22c55e; }
+        .activity-item.warning::before { background-color: #f59e0b; }
+        .activity-item.danger::before { background-color: #ef4444; }
+
+        /* Server Telemetry Strip Items */
+        .telemetry-item {
+            border-right: 1px solid #e2e8f0;
+        }
+        .telemetry-item:last-child {
+            border-right: none;
+        }
+
+        /* Color Variations for Metric Badges */
+        .bg-light-indigo { background-color: #eef2ff; color: #4f46e5; }
+        .bg-light-green { background-color: #f0fdf4; color: #16a34a; }
+        .bg-light-amber { background-color: #fffbeb; color: #d97706; }
+        .bg-light-rose { background-color: #fff1f2; color: #e11d48; }
+        .bg-light-sky { background-color: #f0f9ff; color: #0284c7; }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 260px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Professional Navbar Header (Identical to main theme) -->
+    <nav class="navbar navbar-custom shadow-sm">
+        <div class="container-fluid d-flex justify-content-between align-items-center">
+            <a class="navbar-brand d-flex align-items-center" href="#">
+                <i class="fa-solid fa-folder-tree me-2 text-muted"></i>
+                <span>DocuRegistry Central</span>
+            </a>
+            
+            <!-- Scan Code Search Box -->
+            <div class="input-group input-group-sm scan-search-group mx-3">
+                <span class="input-group-text"><i class="fa-solid fa-barcode"></i></span>
+                <input type="text" class="form-control" placeholder="Scan Barcode or QR Code to quickly jump...">
+                <button class="btn btn-outline-secondary border-start-0" type="button"><i class="fa-solid fa-arrow-right"></i></button>
+            </div>
+
+            <div>
+                <small class="text-muted"><i class="fa-regular fa-id-badge me-1"></i> Admin Node Portal</small>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid px-0">
+        <div class="row g-0">
+            
+            <!-- COLUMN 1: Menu Sidebar (Left - Identical to main theme) -->
+            <div class="col-xl-2 col-lg-3 col-md-4">
+                <div class="menu-sidebar">
+                    <nav class="nav flex-column">
+                        <a class="nav-link" href="#"><i class="fa-solid fa-users"></i>User Management</a>
+                        <a class="nav-link" href="#"><i class="fa-solid fa-file-lines"></i>Documents</a>
+                        <a class="nav-link" href="#"><i class="fa-solid fa-tags"></i>Document Types</a>
+                        <a class="nav-link active" href="#"><i class="fa-solid fa-chart-pie"></i>Reports</a>
+                        <a class="nav-link" href="#">
+                            <i class="fa-solid fa-bell"></i>Notifications
+                            <span class="badge bg-danger ms-auto rounded-pill" style="font-size: 0.65rem;">3</span>
+                        </a>
+                        <div class="nav-divider"></div>
+                        <a class="nav-link" href="#"><i class="fa-solid fa-user-gear"></i>User Profile</a>
+                        <a class="nav-link text-danger" href="#"><i class="fa-solid fa-right-from-bracket text-danger"></i>Logout</a>
+                    </nav>
+                </div>
+            </div>
+
+            <!-- MAIN CONTENT AREA (Unified Center-Right Dashboard Grid Layout) -->
+            <div class="col-xl-10 col-lg-9 col-md-8 px-4 pt-4">
+                
+                <!-- Section Header row -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h5 class="fw-semibold text-dark mb-1">System Metrics Dashboard</h5>
+                        <p class="text-muted small mb-0">Real-time analytical execution data and total indexed assets.</p>
+                    </div>
+                    <div class="text-muted small fw-medium">
+                        <i class="fa-regular fa-calendar me-1"></i> Data Stream: Live Node
+                    </div>
+                </div>
+
+                <!-- ROW 1: Metric Indicator Cards (Total Documents per Document Type) -->
+                <div class="row g-3 mb-3">
+                    <!-- Card 1: Invoices -->
+                    <div class="col-xl-3 col-sm-6">
+                        <div class="card h-100">
+                            <div class="card-body d-flex align-items-center justify-content-between">
+                                <div>
+                                    <span class="metric-label">Total Invoices</span>
+                                    <div class="metric-value">1,248</div>
+                                    <span class="text-success small fw-medium" style="font-size: 0.72rem;">
+                                        <i class="fa-solid fa-arrow-trend-up me-0.5"></i> +12% this week
+                                    </span>
+                                </div>
+                                <div class="metric-icon-box bg-light-green">
+                                    <i class="fa-solid fa-receipt"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Card 2: Contracts -->
+                    <div class="col-xl-3 col-sm-6">
+                        <div class="card h-100">
+                            <div class="card-body d-flex align-items-center justify-content-between">
+                                <div>
+                                    <span class="metric-label">Active Contracts</span>
+                                    <div class="metric-value">412</div>
+                                    <span class="text-muted small" style="font-size: 0.72rem;">
+                                        <i class="fa-regular fa-circle-check me-0.5"></i> 98% validated
+                                    </span>
+                                </div>
+                                <div class="metric-icon-box bg-light-indigo">
+                                    <i class="fa-solid fa-file-signature"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Card 3: Legal Agreements -->
+                    <div class="col-xl-3 col-sm-6">
+                        <div class="card h-100">
+                            <div class="card-body d-flex align-items-center justify-content-between">
+                                <div>
+                                    <span class="metric-label">Legal Agreements</span>
+                                    <div class="metric-value">289</div>
+                                    <span class="text-warning small fw-medium" style="font-size: 0.72rem;">
+                                        <i class="fa-solid fa-circle-exclamation me-0.5"></i> 4 pending audit
+                                    </span>
+                                </div>
+                                <div class="metric-icon-box bg-light-amber">
+                                    <i class="fa-solid fa-gavel"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Card 4: HR Documents -->
+                    <div class="col-xl-3 col-sm-6">
+                        <div class="card h-100">
+                            <div class="card-body d-flex align-items-center justify-content-between">
+                                <div>
+                                    <span class="metric-label">HR Manifests</span>
+                                    <div class="metric-value">856</div>
+                                    <span class="text-success small fw-medium" style="font-size: 0.72rem;">
+                                        <i class="fa-solid fa-arrow-trend-up me-0.5"></i> +4 new hires
+                                    </span>
+                                </div>
+                                <div class="metric-icon-box bg-light-sky">
+                                    <i class="fa-solid fa-user-tie"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- NEW ROW 2: Server Infrastructure Status (High Density Telemetry Strip) -->
+                <div class="card mb-4 bg-white border-1">
+                    <div class="card-body py-3">
+                        <div class="row align-items-center text-center text-sm-start g-3">
+                            <div class="col-md-3 col-sm-6 telemetry-item">
+                                <div class="d-flex align-items-center justify-content-sm-start justify-content-center">
+                                    <i class="fa-solid fa-server text-muted me-3 fs-5"></i>
+                                    <div>
+                                        <div class="text-muted small font-weight-medium" style="font-size: 0.75rem;">SERVER INSTANCE</div>
+                                        <div class="fw-semibold text-dark" style="font-size: 0.88rem;">v4.2.1-stable</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-sm-6 telemetry-item">
+                                <div>
+                                    <div class="text-muted small" style="font-size: 0.75rem;">TOTAL POOL SPACE</div>
+                                    <div class="fw-semibold text-dark" style="font-size: 0.88rem;">2.0 TB SAS</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-sm-6 telemetry-item">
+                                <div>
+                                    <div class="text-muted small" style="font-size: 0.75rem;">AVAILABLE FREE SPACE</div>
+                                    <div class="fw-semibold text-success" style="font-size: 0.88rem;">
+                                        1.1 TB <span class="text-muted fw-normal small">(55% Free)</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-sm-6 telemetry-item">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div>
+                                        <div class="text-muted small" style="font-size: 0.75rem;">MEMORY LOAD</div>
+                                        <div class="fw-semibold text-dark" style="font-size: 0.88rem;">42% Used</div>
+                                    </div>
+                                    <div class="spinner-grow spinner-grow-sm text-success ms-auto" role="status" title="Telemetry Node Active"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ROW 3: Analytical Data Visualizations (Charts & Graphs) -->
+                <div class="row g-4 mb-4">
+                    <!-- Line Chart Component: Upload Activity Matrix -->
+                    <div class="col-xl-8 col-lg-7">
+                        <div class="card h-100">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <span><i class="fa-solid fa-chart-line text-muted me-2"></i> File Indexing Velocity Trend</span>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.75rem;" type="button">7 Days</button>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container">
+                                    <canvas id="indexingTrendsChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Doughnut Chart Component: Distribution Share -->
+                    <div class="col-xl-4 col-lg-5">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <i class="fa-solid fa-chart-pie text-muted me-2"></i> Document Asset Distribution
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container d-flex align-items-center justify-content-center">
+                                    <canvas id="assetDistributionChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- NEW ROW 4: User Activities & Notifications (Side-by-Side Dynamic Split Grid) -->
+                <div class="row g-4 mb-4">
+                    <!-- Latest User Activity Panel -->
+                    <div class="col-xl-6 col-lg-6">
+                        <div class="card h-100">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <span><i class="fa-solid fa-user-clock text-muted me-2"></i> Latest User Activity</span>
+                                <a href="#" class="text-decoration-none small text-muted" style="font-size: 0.75rem;">View Audit Log</a>
+                            </div>
+                            <div class="card-body">
+                                <div class="d-flex flex-column gap-1">
+                                    <div class="activity-item success">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <span class="small text-dark fw-medium">Sarah Jenkins (Finance)</span>
+                                            <span class="text-muted" style="font-size: 0.7rem;">2 mins ago</span>
+                                        </div>
+                                        <p class="text-muted small mb-0">Uploaded and encrypted <code class="small text-dark">INV-2026-089.pdf</code></p>
+                                    </div>
+                                    <div class="activity-item primary">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <span class="small text-dark fw-medium">Marcus Vance (Legal)</span>
+                                            <span class="text-muted" style="font-size: 0.7rem;">14 mins ago</span>
+                                        </div>
+                                        <p class="text-muted small mb-0">Approved signature terms for Vendor Master Agreement.</p>
+                                    </div>
+                                    <div class="activity-item warning">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <span class="small text-dark fw-medium">System Engine Daemon</span>
+                                            <span class="text-muted" style="font-size: 0.7rem;">1 hr ago</span>
+                                        </div>
+                                        <p class="text-muted small mb-0">Re-indexed 14 stale entry pathways on Storage Node-B.</p>
+                                    </div>
+                                    <div class="activity-item primary">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <span class="small text-dark fw-medium">Director Admin Node</span>
+                                            <span class="text-muted" style="font-size: 0.7rem;">2 hrs ago</span>
+                                        </div>
+                                        <p class="text-muted small mb-0">Updated permission policy structural rules for HR Manifest types.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- System Alerts & Notifications Panel -->
+                    <div class="col-xl-6 col-lg-6">
+                        <div class="card h-100">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <span><i class="fa-solid fa-envelope-open-text text-muted me-2"></i> System Notifications</span>
+                                <span class="badge bg-light text-secondary rounded border" style="font-size: 0.7rem;">3 Unread</span>
+                            </div>
+                            <div class="card-body">
+                                <div class="d-flex flex-column gap-1">
+                                    <div class="activity-item danger">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <span class="small text-danger fw-semibold"><i class="fa-solid fa-triangle-exclamation me-1"></i> Critical Security Notice</span>
+                                            <span class="text-muted" style="font-size: 0.7rem;">Just now</span>
+                                        </div>
+                                        <p class="text-muted small mb-0">3 failed admin credential attempts blocked from unexpected IP: 112.198.45.12.</p>
+                                    </div>
+                                    <div class="activity-item warning">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <span class="small text-dark fw-medium"><i class="fa-solid fa-circle-exclamation text-warning me-1"></i> Retention Expiry Limit</span>
+                                            <span class="text-muted" style="font-size: 0.7rem;">5 hrs ago</span>
+                                        </div>
+                                        <p class="text-muted small mb-0">45 temporary document manifests have passed lifecycle parameters and are slated for purge.</p>
+                                    </div>
+                                    <div class="activity-item success">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <span class="small text-dark fw-medium"><i class="fa-solid fa-cloud-arrow-up text-success me-1"></i> Cloud Backup Verification</span>
+                                            <span class="text-muted" style="font-size: 0.7rem;">Yesterday</span>
+                                        </div>
+                                        <p class="text-muted small mb-0">Nightly cryptographic sync successfully compiled and pushed to secondary offsite mirror vault.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ROW 5: Quicklinks Dashboard & Secondary Progress Metrics Grid -->
+                <div class="row g-4 mb-5">
+                    <!-- Quicklinks Action Panel Column Layout -->
+                    <div class="col-xl-6 col-lg-6">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <i class="fa-solid fa-bolt text-muted me-2"></i> Operational Quicklinks
+                            </div>
+                            <div class="card-body">
+                                <div class="row g-3">
+                                    <div class="col-sm-6">
+                                        <a href="#" class="quicklink-card">
+                                            <i class="fa-solid fa-file-circle-plus text-primary"></i>
+                                            <span>Add Document</span>
+                                        </a>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <a href="#" class="quicklink-card">
+                                            <i class="fa-solid fa-sliders text-success"></i>
+                                            <span>Manage Types</span>
+                                        </a>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <a href="#" class="quicklink-card">
+                                            <i class="fa-solid fa-user-gear text-info"></i>
+                                            <span>Manage Users</span>
+                                        </a>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <a href="#" class="quicklink-card">
+                                            <i class="fa-solid fa-square-poll-vertical text-warning"></i>
+                                            <span>System Reports</span>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Horizontal Bar Chart Component: Storage Nodes allocation -->
+                    <div class="col-xl-6 col-lg-6">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <i class="fa-solid fa-server text-muted me-2"></i> Storage per document type
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container">
+                                    <canvas id="storageNodeChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Framework Infrastructure Scripts & Dependencies -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <!-- Chart.js Engine CDN for rendering animations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            
+            // Global Chart Style Overrides for Modern Clean Appearance
+            Chart.defaults.font.family = "'Inter', sans-serif";
+            Chart.defaults.font.size = 11;
+            Chart.defaults.color = '#64748b';
+            Chart.defaults.plugins.legend.labels.usePointStyle = true;
+            Chart.defaults.plugins.legend.labels.boxWidth = 8;
+
+            // 1. Line Chart Construction: Indexing Activity Velocity Over Time
+            const contextLine = document.getElementById('indexingTrendsChart').getContext('2d');
+            new Chart(contextLine, {
+                type: 'line',
+                data: {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets: [
+                        {
+                            label: 'QR Generation Sequences',
+                            data: [65, 78, 72, 89, 110, 45, 55],
+                            borderColor: '#6366f1',
+                            backgroundColor: 'rgba(99, 102, 241, 0.03)',
+                            fill: true,
+                            tension: 0.35,
+                            borderWidth: 2,
+                            pointRadius: 3,
+                            pointHoverRadius: 5
+                        },
+                        {
+                            label: 'Barcode System Prints',
+                            data: [45, 52, 49, 62, 85, 20, 32],
+                            borderColor: '#06b6d4',
+                            backgroundColor: 'transparent',
+                            fill: false,
+                            tension: 0.35,
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            pointRadius: 0
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top', align: 'end' }
+                    },
+                    scales: {
+                        y: {
+                            grid: { color: '#f1f5f9' },
+                            border: { display: false }
+                        },
+                        x: { 
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+
+            // 2. Doughnut Chart Construction: Document Allocation Share
+            const contextDoughnut = document.getElementById('assetDistributionChart').getContext('2d');
+            new Chart(contextDoughnut, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Invoices', 'Contracts', 'Legal Agreements', 'HR Manifests'],
+                    datasets: [{
+                        data: [1248, 412, 289, 856],
+                        backgroundColor: ['#22c55e', '#6366f1', '#f59e0b', '#38bdf8'],
+                        borderWidth: 4,
+                        borderColor: '#ffffff',
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '72%',
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+
+            // 3. Horizontal Bar Chart Construction: Storage Allocations
+            const contextBar = document.getElementById('storageNodeChart').getContext('2d');
+            new Chart(contextBar, {
+                type: 'bar',
+                data: {
+                    labels: ['legal-prod', 'finance-node', 'intranet-hr', 'crm-docs', 'compliance'],
+                    datasets: [{
+                        label: 'Gigabytes Utilized',
+                        data: [142, 385, 94, 210, 68],
+                        backgroundColor: '#94a3b8',
+                        hoverBackgroundColor: '#475569',
+                        borderRadius: 4,
+                        barThickness: 12
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: '#f1f5f9' },
+                            border: { display: false }
+                        },
+                        y: {
+                            grid: { display: false },
+                            border: { display: false }
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

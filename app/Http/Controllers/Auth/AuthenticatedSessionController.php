@@ -10,12 +10,10 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Inertia\Response;
+use OwenIt\Auditing\Models\Audit;
 
 class AuthenticatedSessionController extends Controller
 {
-    /**
-     * Display the login view.
-     */
     public function create(): Response
     {
         return Inertia::render('Auth/Login', [
@@ -24,27 +22,42 @@ class AuthenticatedSessionController extends Controller
         ]);
     }
 
-    /**
-     * Handle an incoming authentication request.
-     */
     public function store(LoginRequest $request): RedirectResponse
     {
         $request->authenticate();
-
         $request->session()->regenerate();
+
+        $user = auth()->user();
+
+        // Update last login timestamp
+        $user->timestamps = false;
+        $user->last_login_at = now();
+        $user->save();
+        $user->timestamps = true;
+
+        // Record login audit manually
+        Audit::create([
+            'user_type'      => get_class($user),
+            'user_id'        => $user->id,
+            'event'          => 'login',
+            'auditable_type' => get_class($user),
+            'auditable_id'   => $user->id,
+            'old_values'     => json_encode([]),
+            'new_values'     => json_encode(['ip' => $request->ip()]),
+            'url'            => $request->fullUrl(),
+            'ip_address'     => $request->ip(),
+            'user_agent'     => $request->userAgent() ?? '',
+            'tags'           => null,
+        ]);
 
         return redirect()->intended(route('documents.index', absolute: false));
     }
 
-    /**
-     * Destroy an authenticated session.
-     */
     public function destroy(Request $request): RedirectResponse
     {
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();
-
         $request->session()->regenerateToken();
 
         return redirect()->route('login');

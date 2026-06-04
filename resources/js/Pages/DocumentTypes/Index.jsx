@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useForm } from '@inertiajs/react';
+import { Head, useForm } from '@inertiajs/react';
 import DmsLayout from '@/Layouts/DmsLayout';
 
 export default function DocumentTypesIndex({ documentTypes }) {
@@ -35,6 +35,7 @@ export default function DocumentTypesIndex({ documentTypes }) {
 
     return (
         <DmsLayout activePage="Document Types">
+            <Head title="Document Types" />
             <div style={{ padding: '1.5rem', maxWidth: 720 }}>
                 <h1 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#0f172a', marginBottom: '1.5rem' }}>Document Types</h1>
 

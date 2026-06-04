@@ -1,22 +1,24 @@
 <?php
 
+use App\Http\Controllers\AuditTrailController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\DocumentTypeController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ReportController;
+use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 
 Route::get('/', function () {
     return redirect()->route('login');
 });
 
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
-
 Route::middleware(['auth', 'verified'])->group(function () {
+    // Dashboard (admin only)
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
     // Documents
     Route::get('/documents', [DocumentController::class, 'index'])->name('documents.index');
     Route::post('/documents', [DocumentController::class, 'store'])->name('documents.store');
@@ -31,6 +33,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Users (admin only)
     Route::get('/users', [UserController::class, 'index'])->name('users.index');
     Route::put('/users/{user}/role', [UserController::class, 'updateRole'])->name('users.update-role');
+
+    // Audit Trail (admin only)
+    Route::get('/audit-trail', [AuditTrailController::class, 'index'])->name('audit-trail.index');
+
+    // Reports (admin only)
+    Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+    Route::get('/reports/print/user-activity', [ReportController::class, 'printUserActivity'])->name('reports.print.user-activity');
+    Route::get('/reports/print/document-list', [ReportController::class, 'printDocumentList'])->name('reports.print.document-list');
+
+    // Settings (admin only)
+    Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
+    Route::post('/settings', [SettingsController::class, 'update'])->name('settings.update');
 
     // Notifications
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');

@@ -1,4 +1,4 @@
-import { useForm, usePage } from '@inertiajs/react';
+import { Head, useForm, usePage } from '@inertiajs/react';
 import DmsLayout from '@/Layouts/DmsLayout';
 
 export default function DmsProfileEdit({ mustVerifyEmail, status }) {
@@ -30,6 +30,7 @@ export default function DmsProfileEdit({ mustVerifyEmail, status }) {
 
     return (
         <DmsLayout activePage="User Profile">
+            <Head title="User Profile" />
             <div style={{ padding: '1.5rem', maxWidth: 620 }}>
                 <h1 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#0f172a', marginBottom: '1.5rem' }}>User Profile</h1>
 
