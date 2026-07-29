@@ -41,10 +41,11 @@ class ReportController extends Controller
 
         // ── Document List per Type ─────────────────────────────────────────
         $documentList = Document::with(['documentType', 'owner'])
-            ->when($request->dl_type, fn ($q) => $q->whereHas('documentType', fn ($q2) => $q2->where('name', $request->dl_type)))
-            ->when($request->dl_user, fn ($q) => $q->whereHas('owner', fn ($q2) => $q2->where('name', 'like', "%{$request->dl_user}%")))
-            ->when($request->dl_from, fn ($q) => $q->whereDate('created_at', '>=', $request->dl_from))
-            ->when($request->dl_to,   fn ($q) => $q->whereDate('created_at', '<=', $request->dl_to))
+            ->when($request->dl_type,  fn ($q) => $q->whereHas('documentType', fn ($q2) => $q2->where('name', $request->dl_type)))
+            ->when($request->dl_label, fn ($q) => $q->where('name', 'like', "%{$request->dl_label}%"))
+            ->when($request->dl_dept,  fn ($q) => $q->where('department', 'like', "%{$request->dl_dept}%"))
+            ->when($request->dl_from,  fn ($q) => $q->whereDate('created_at', '>=', $request->dl_from))
+            ->when($request->dl_to,    fn ($q) => $q->whereDate('created_at', '<=', $request->dl_to))
             ->latest()
             ->paginate(20, ['*'], 'dl_page')
             ->through(fn ($d) => [
@@ -52,10 +53,11 @@ class ReportController extends Controller
                 'codeType'     => $d->code_type,
                 'codeImage'    => url('storage/' . $d->code_image_path),
                 'codeId'       => $d->code_id,
-                'name'         => $d->name,
+                'label'        => $d->name,
                 'type'         => $d->documentType->name,
-                'uploadedDate' => $d->created_at->format('M d, Y'),
+                'department'   => $d->department ?? '—',
                 'owner'        => $d->owner->name,
+                'documentDate' => $d->created_at->format('M d, Y'),
             ]);
 
         return Inertia::render('Reports/Index', [
@@ -64,7 +66,7 @@ class ReportController extends Controller
             'documentList' => $documentList,
             'users'        => User::orderBy('name')->get(['id', 'name']),
             'docTypes'     => DocumentType::orderBy('name')->get(['id', 'name']),
-            'filters'      => $request->only(['tab', 'ua_user', 'ua_from', 'ua_to', 'dl_type', 'dl_user', 'dl_from', 'dl_to']),
+            'filters'      => $request->only(['tab', 'ua_user', 'ua_from', 'ua_to', 'dl_type', 'dl_label', 'dl_dept', 'dl_from', 'dl_to']),
         ]);
     }
 
@@ -113,30 +115,33 @@ class ReportController extends Controller
         abort_if(! auth()->user()->hasRole('admin'), 403);
 
         $rows = Document::with(['documentType', 'owner'])
-            ->when($request->dl_type, fn ($q) => $q->whereHas('documentType', fn ($q2) => $q2->where('name', $request->dl_type)))
-            ->when($request->dl_user, fn ($q) => $q->whereHas('owner', fn ($q2) => $q2->where('name', 'like', "%{$request->dl_user}%")))
-            ->when($request->dl_from, fn ($q) => $q->whereDate('created_at', '>=', $request->dl_from))
-            ->when($request->dl_to,   fn ($q) => $q->whereDate('created_at', '<=', $request->dl_to))
+            ->when($request->dl_type,  fn ($q) => $q->whereHas('documentType', fn ($q2) => $q2->where('name', $request->dl_type)))
+            ->when($request->dl_label, fn ($q) => $q->where('name', 'like', "%{$request->dl_label}%"))
+            ->when($request->dl_dept,  fn ($q) => $q->where('department', 'like', "%{$request->dl_dept}%"))
+            ->when($request->dl_from,  fn ($q) => $q->whereDate('created_at', '>=', $request->dl_from))
+            ->when($request->dl_to,    fn ($q) => $q->whereDate('created_at', '<=', $request->dl_to))
             ->latest()
             ->get()
             ->map(fn ($d) => [
                 $d->code_id,
                 $d->name,
                 $d->documentType->name,
-                $d->created_at->format('M d, Y'),
+                $d->department ?? '—',
                 $d->owner->name,
+                $d->created_at->format('M d, Y'),
             ]);
 
         $filters = [
-            'Document Type' => $request->dl_type ?: 'All Types',
-            'User'          => $request->dl_user ?: 'All Users',
-            'Date From'     => $request->dl_from ?? 'Any',
-            'Date To'       => $request->dl_to   ?? 'Any',
+            'Document Class' => $request->dl_type  ?: 'All Classes',
+            'Label'          => $request->dl_label ?: 'All',
+            'Department'     => $request->dl_dept  ?: 'All',
+            'Date From'      => $request->dl_from  ?? 'Any',
+            'Date To'        => $request->dl_to    ?? 'Any',
         ];
 
         return view('reports.print', [
             'title'     => 'Document List per Type',
-            'headers'   => ['Code ID', 'Document Name', 'Document Type', 'Uploaded Date', 'User'],
+            'headers'   => ['Code ID', 'Label', 'Document Class', 'Department', 'Added By', 'Document Date'],
             'rows'      => $rows->all(),
             'filters'   => $filters,
             'generated' => now()->format('M d, Y h:i A'),

@@ -1,24 +1,80 @@
-import { useState, useEffect } from 'react';
-import { Link, usePage } from '@inertiajs/react';
+import { useState, useEffect, useRef } from 'react';
+import { Link, usePage, router } from '@inertiajs/react';
 import { useResponsive } from '@/hooks/useResponsive';
 
 const ALL_NAV_ITEMS = [
     { label: 'Dashboard',       icon: <DashboardIcon />, routeName: 'dashboard',            adminOnly: true },
-    { label: 'User Management', icon: <UsersIcon />,     routeName: 'users.index',          adminOnly: true },
     { label: 'Documents',       icon: <DocumentIcon />,  routeName: 'documents.index',      adminOnly: false },
     { label: 'Document Types',  icon: <TagsIcon />,      routeName: 'document-types.index', adminOnly: true },
+    { label: 'Folders',         icon: <FolderNavIcon />, routeName: 'folders.index',        adminOnly: true },
     { label: 'Audit Trail',     icon: <AuditIcon />,     routeName: 'audit-trail.index',    adminOnly: true },
     { label: 'Reports',         icon: <ChartIcon />,     routeName: 'reports.index',        adminOnly: true },
     { label: 'Settings',        icon: <SettingsIcon />,  routeName: 'settings.index',       adminOnly: true },
+    { label: 'User Management', icon: <UsersIcon />,     routeName: 'users.index',          adminOnly: true },
 ];
 
-export default function DmsLayout({ activePage, scanValue = '', onScanChange, children }) {
+export default function DmsLayout({ activePage, onScanChange, onSearchEnter, children }) {
     const { auth, unreadNotificationsCount } = usePage().props;
     const { isMobile, isTablet } = useResponsive();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const notifCount = unreadNotificationsCount ?? 0;
     const isAdmin    = auth?.user?.role === 'admin';
     const NAV_ITEMS  = ALL_NAV_ITEMS.filter(item => !item.adminOnly || isAdmin);
+
+    // ── Global search ─────────────────────────────────────────────────────────
+    const [query, setQuery]             = useState('');
+    const [suggestions, setSuggestions] = useState([]);
+    const [showDropdown, setShowDropdown] = useState(false);
+    const debounceRef    = useRef(null);
+    const searchRef      = useRef(null);
+
+    useEffect(() => {
+        function onClickOutside(e) {
+            if (searchRef.current && !searchRef.current.contains(e.target)) {
+                setShowDropdown(false);
+            }
+        }
+        document.addEventListener('mousedown', onClickOutside);
+        return () => document.removeEventListener('mousedown', onClickOutside);
+    }, []);
+
+    function handleSearchInput(value) {
+        setQuery(value);
+        onScanChange && onScanChange(value);
+        clearTimeout(debounceRef.current);
+        if (value.trim().length < 2) { setSuggestions([]); setShowDropdown(false); return; }
+        debounceRef.current = setTimeout(async () => {
+            try {
+                const res = await fetch(`${route('documents.search')}?q=${encodeURIComponent(value)}`, {
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    setSuggestions(data);
+                    setShowDropdown(data.length > 0);
+                }
+            } catch {}
+        }, 280);
+    }
+
+    function handleSuggestionClick(doc) {
+        setQuery(''); setSuggestions([]); setShowDropdown(false);
+        onScanChange && onScanChange('');
+        router.visit(route('documents.index', { open: doc.id }));
+    }
+
+    function clearSearch() {
+        setQuery(''); setSuggestions([]); setShowDropdown(false);
+        onScanChange && onScanChange('');
+    }
+
+    function handleKeyDown(e) {
+        if (e.key === 'Enter') {
+            if (suggestions.length > 0) { handleSuggestionClick(suggestions[0]); return; }
+            if (query && onSearchEnter) onSearchEnter(query);
+        }
+        if (e.key === 'Escape') { setShowDropdown(false); }
+    }
 
     // Close sidebar on route change or resize to desktop
     useEffect(() => {
@@ -70,25 +126,27 @@ export default function DmsLayout({ activePage, scanValue = '', onScanChange, ch
 
                 {/* Center: scan search (hidden on mobile) */}
                 {!isMobile && (
-                    <div style={{ flex: 1, maxWidth: 400 }}>
+                    <div ref={searchRef} style={{ flex: 1, maxWidth: 400, position: 'relative' }}>
                         <div style={{ display: 'flex', border: '1px solid #cbd5e1', borderRadius: 6, overflow: 'hidden' }}>
                             <span style={{ display: 'flex', alignItems: 'center', padding: '0 10px', background: '#f8fafc', color: '#6366f1', borderRight: '1px solid #cbd5e1' }}>
                                 <BarcodeIcon />
                             </span>
                             <input
                                 type="text"
-                                value={scanValue}
-                                onChange={e => onScanChange && onScanChange(e.target.value)}
+                                value={query}
+                                onChange={e => handleSearchInput(e.target.value)}
+                                onKeyDown={handleKeyDown}
                                 placeholder="Scan Barcode or QR Code…"
                                 style={{ flex: 1, padding: '0.4rem 0.75rem', fontSize: '0.82rem', outline: 'none', border: 'none', color: '#1e293b', minWidth: 0 }}
                             />
-                            {scanValue && (
-                                <button onClick={() => onScanChange && onScanChange('')}
+                            {query && (
+                                <button onClick={clearSearch}
                                     style={{ padding: '0 10px', background: '#fff', border: 'none', borderLeft: '1px solid #cbd5e1', cursor: 'pointer', color: '#94a3b8' }}>
                                     <XIcon />
                                 </button>
                             )}
                         </div>
+                        {showDropdown && <SearchDropdown suggestions={suggestions} onSelect={handleSuggestionClick} />}
                     </div>
                 )}
 
@@ -102,23 +160,27 @@ export default function DmsLayout({ activePage, scanValue = '', onScanChange, ch
             {/* Mobile scan bar (below navbar) */}
             {isMobile && (
                 <div style={{ background: '#fff', borderBottom: '1px solid #e2e8f0', padding: '0.5rem 1rem' }}>
-                    <div style={{ display: 'flex', border: '1px solid #cbd5e1', borderRadius: 6, overflow: 'hidden' }}>
-                        <span style={{ display: 'flex', alignItems: 'center', padding: '0 10px', background: '#f8fafc', color: '#6366f1', borderRight: '1px solid #cbd5e1' }}>
-                            <BarcodeIcon />
-                        </span>
-                        <input
-                            type="text"
-                            value={scanValue}
-                            onChange={e => onScanChange && onScanChange(e.target.value)}
-                            placeholder="Scan Barcode or QR Code…"
-                            style={{ flex: 1, padding: '0.4rem 0.75rem', fontSize: '0.82rem', outline: 'none', border: 'none', color: '#1e293b' }}
-                        />
-                        {scanValue && (
-                            <button onClick={() => onScanChange && onScanChange('')}
-                                style={{ padding: '0 10px', background: '#fff', border: 'none', borderLeft: '1px solid #cbd5e1', cursor: 'pointer', color: '#94a3b8' }}>
-                                <XIcon />
-                            </button>
-                        )}
+                    <div ref={searchRef} style={{ position: 'relative' }}>
+                        <div style={{ display: 'flex', border: '1px solid #cbd5e1', borderRadius: 6, overflow: 'hidden' }}>
+                            <span style={{ display: 'flex', alignItems: 'center', padding: '0 10px', background: '#f8fafc', color: '#6366f1', borderRight: '1px solid #cbd5e1' }}>
+                                <BarcodeIcon />
+                            </span>
+                            <input
+                                type="text"
+                                value={query}
+                                onChange={e => handleSearchInput(e.target.value)}
+                                onKeyDown={handleKeyDown}
+                                placeholder="Scan Barcode or QR Code…"
+                                style={{ flex: 1, padding: '0.4rem 0.75rem', fontSize: '0.82rem', outline: 'none', border: 'none', color: '#1e293b' }}
+                            />
+                            {query && (
+                                <button onClick={clearSearch}
+                                    style={{ padding: '0 10px', background: '#fff', border: 'none', borderLeft: '1px solid #cbd5e1', cursor: 'pointer', color: '#94a3b8' }}>
+                                    <XIcon />
+                                </button>
+                            )}
+                        </div>
+                        {showDropdown && <SearchDropdown suggestions={suggestions} onSelect={handleSuggestionClick} />}
                     </div>
                 </div>
             )}
@@ -177,19 +239,18 @@ export default function DmsLayout({ activePage, scanValue = '', onScanChange, ch
                             <SidebarLink key={item.label} item={item} active={activePage === item.label} showLabel={showLabels || isMobile} onNavigate={() => setSidebarOpen(false)} />
                         ))}
 
-                        <SidebarLink
-                            item={{ label: 'Notifications', icon: <BellIcon />, routeName: 'notifications.index' }}
-                            active={activePage === 'Notifications'}
-                            badge={notifCount > 0 ? notifCount : null}
-                            showLabel={showLabels || isMobile}
-                            onNavigate={() => setSidebarOpen(false)}
-                        />
-
                         <div style={{ height: 1, background: '#e2e8f0', margin: '0.75rem 0' }} />
 
                         <SidebarLink
                             item={{ label: 'User Profile', icon: <ProfileIcon />, routeName: 'profile.edit' }}
                             active={activePage === 'User Profile'}
+                            showLabel={showLabels || isMobile}
+                            onNavigate={() => setSidebarOpen(false)}
+                        />
+                        <SidebarLink
+                            item={{ label: 'Notifications', icon: <BellIcon />, routeName: 'notifications.index' }}
+                            active={activePage === 'Notifications'}
+                            badge={notifCount > 0 ? notifCount : null}
                             showLabel={showLabels || isMobile}
                             onNavigate={() => setSidebarOpen(false)}
                         />
@@ -207,6 +268,43 @@ export default function DmsLayout({ activePage, scanValue = '', onScanChange, ch
                     {children}
                 </main>
             </div>
+        </div>
+    );
+}
+
+function SearchDropdown({ suggestions, onSelect }) {
+    return (
+        <div style={{
+            position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0,
+            background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8,
+            boxShadow: '0 8px 24px rgba(0,0,0,0.10)', zIndex: 200, overflow: 'hidden',
+        }}>
+            {suggestions.map((doc, i) => (
+                <button
+                    key={doc.id}
+                    onMouseDown={e => { e.preventDefault(); onSelect(doc); }}
+                    style={{
+                        display: 'flex', alignItems: 'center', gap: 10,
+                        width: '100%', padding: '0.6rem 0.85rem',
+                        background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
+                        borderBottom: i < suggestions.length - 1 ? '1px solid #f1f5f9' : 'none',
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                >
+                    <img
+                        src={doc.codeImage}
+                        alt={doc.codeType}
+                        style={doc.codeType === 'QR'
+                            ? { width: 32, height: 32, flexShrink: 0 }
+                            : { width: 48, height: 18, objectFit: 'contain', flexShrink: 0 }}
+                    />
+                    <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.name}</div>
+                        <div style={{ fontSize: '0.7rem', fontFamily: 'monospace', color: '#6366f1', marginTop: 1 }}>{doc.codeId}</div>
+                    </div>
+                </button>
+            ))}
         </div>
     );
 }
@@ -296,4 +394,7 @@ function ProfileIcon() {
 }
 function LogoutIcon() {
     return <svg width="16" height="16" fill="none" stroke="#ef4444" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>;
+}
+function FolderNavIcon() {
+    return <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>;
 }

@@ -12,6 +12,7 @@ class Document extends Model implements Auditable
 
     protected $fillable = [
         'name',
+        'department',
         'file_path',
         'document_type_id',
         'owner_id',
@@ -19,6 +20,9 @@ class Document extends Model implements Auditable
         'code_id',
         'code_image_path',
         'storage_location',
+        'link_document_url',
+        'allowed_users',
+        'allowed_roles',
     ];
 
     // Only audit what's meaningful
@@ -29,6 +33,9 @@ class Document extends Model implements Auditable
         'code_type',
         'code_id',
         'storage_location',
+        'link_document_url',
+        'allowed_users',
+        'allowed_roles',
     ];
 
     public function documentType(): BelongsTo

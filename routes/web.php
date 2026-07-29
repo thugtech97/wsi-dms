@@ -4,6 +4,7 @@ use App\Http\Controllers\AuditTrailController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\DocumentTypeController;
+use App\Http\Controllers\FolderController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportController;
@@ -20,8 +21,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Documents
+    Route::get('/documents/search', [DocumentController::class, 'search'])->name('documents.search');
     Route::get('/documents', [DocumentController::class, 'index'])->name('documents.index');
     Route::post('/documents', [DocumentController::class, 'store'])->name('documents.store');
+    Route::put('/documents/{document}', [DocumentController::class, 'update'])->name('documents.update');
     Route::delete('/documents/{document}', [DocumentController::class, 'destroy'])->name('documents.destroy');
 
     // Document Types
@@ -30,9 +33,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('/document-types/{documentType}', [DocumentTypeController::class, 'update'])->name('document-types.update');
     Route::delete('/document-types/{documentType}', [DocumentTypeController::class, 'destroy'])->name('document-types.destroy');
 
+    // Folders (admin only)
+    Route::get('/folders', [FolderController::class, 'index'])->name('folders.index');
+    Route::post('/folders', [FolderController::class, 'store'])->name('folders.store');
+    Route::put('/folders/{folder}', [FolderController::class, 'update'])->name('folders.update');
+    Route::delete('/folders/{folder}', [FolderController::class, 'destroy'])->name('folders.destroy');
+
     // Users (admin only)
     Route::get('/users', [UserController::class, 'index'])->name('users.index');
+    Route::post('/users', [UserController::class, 'store'])->name('users.store');
+    Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
+    Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
     Route::put('/users/{user}/role', [UserController::class, 'updateRole'])->name('users.update-role');
+    Route::post('/roles', [UserController::class, 'storeRole'])->name('roles.store');
+    Route::delete('/roles/{role}', [UserController::class, 'destroyRole'])->name('roles.destroy');
 
     // Audit Trail (admin only)
     Route::get('/audit-trail', [AuditTrailController::class, 'index'])->name('audit-trail.index');

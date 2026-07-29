@@ -2,27 +2,13 @@ import { useForm } from '@inertiajs/react';
 
 const inputStyle = { width: '100%', padding: '0.5rem 0.75rem', fontSize: '0.85rem', border: '1px solid #cbd5e1', borderRadius: 6, color: '#1e293b', outline: 'none', boxSizing: 'border-box', background: '#fff' };
 const labelStyle = { fontWeight: 500, fontSize: '0.8rem', color: '#64748b', display: 'block', marginBottom: '0.35rem' };
-const listContainerStyle = {
-    border: '1px solid #cbd5e1',
-    borderRadius: 6,
-    padding: '0.50rem',
-    maxHeight: '120px',
-    overflowY: 'auto',
-    background: '#fff',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '0.4rem'
-};
 
-export default function UploadPanel({ documentTypes, users = [], roles = [], onSuccess }) {
+export default function UploadPanel({ documentTypes, onSuccess }) {
     const { data, setData, post, processing, errors, reset } = useForm({
         label:            '',
         document_type_id: '',
         department:       '',
         code_type:        'QR',
-        link_document_url: '',
-        allowed_users:     [],
-        allowed_roles:     [],
     });
 
     function handleSubmit(e) {
@@ -31,15 +17,6 @@ export default function UploadPanel({ documentTypes, users = [], roles = [], onS
             onSuccess: () => { reset(); onSuccess?.(); },
         });
     }
-
-    const handleToggleSelection = (field, itemId) => {
-        const currentSelection = data[field];
-        if (currentSelection.includes(itemId)) {
-            setData(field, currentSelection.filter(id => id !== itemId));
-        } else {
-            setData(field, [...currentSelection, itemId]);
-        }
-    };
 
     return (
         <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.05)', position: 'sticky', top: 86 }}>
@@ -82,7 +59,7 @@ export default function UploadPanel({ documentTypes, users = [], roles = [], onS
                     </div>
 
                     {/* Department */}
-                    {/* <div style={{ marginBottom: '1rem' }}>
+                    <div style={{ marginBottom: '1rem' }}>
                         <label style={labelStyle}>Department</label>
                         <input
                             type="text"
@@ -92,72 +69,7 @@ export default function UploadPanel({ documentTypes, users = [], roles = [], onS
                             style={inputStyle}
                         />
                         {errors.department && <Err>{errors.department}</Err>}
-                    </div> */}
-
-                    {/* Link / Document URL */}
-                    <div style={{ marginBottom: '1rem' }}>
-                        <label style={labelStyle}>Link / Document URL</label>
-                        <input
-                            type="text"
-                            value={data.link_document_url}
-                            onChange={e => setData('link_document_url', e.target.value)}
-                            placeholder="e.g. https://example.com/document"
-                            style={inputStyle}
-                        />
-                        {errors.link_document_url && <Err>{errors.link_document_url}</Err>}
                     </div>
-                    
-                    {/* Allowed Users Multi-Select List */}
-                    {/* <div style={{ marginBottom: '1rem' }}>
-                        <label style={labelStyle}>Assign to Specific Users</label>
-                        <div style={listContainerStyle}>
-                            {users.length === 0 ? (
-                                <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>No users available</span>
-                            ) : (
-                                users.map(user => {
-                                    const isChecked = data.allowed_users.includes(user.id);
-                                    return (
-                                        <label key={user.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: '#1e293b', cursor: 'pointer', textTransform: 'capitalize' }}>
-                                            <input
-                                                type="checkbox"
-                                                checked={isChecked}
-                                                onChange={() => handleToggleSelection('allowed_users', user.id)}
-                                                style={{ cursor: 'pointer', accentColor: '#6366f1' }}
-                                            />
-                                            {user.name}
-                                        </label>
-                                    );
-                                })
-                            )}
-                        </div>
-                        {errors.allowed_users && <Err>{errors.allowed_users}</Err>}
-                    </div> */}
-
-                    {/* Allowed Roles Multi-Select List */}
-                    {/* <div style={{ marginBottom: '1rem' }}>
-                        <label style={labelStyle}>Assign to System Roles</label>
-                        <div style={listContainerStyle}>
-                            {roles.length === 0 ? (
-                                <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>No roles available</span>
-                            ) : (
-                                roles.map(role => {
-                                    const isChecked = data.allowed_roles.includes(role.id);
-                                    return (
-                                        <label key={role.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: '#1e293b', cursor: 'pointer', textTransform: 'capitalize' }}>
-                                            <input
-                                                type="checkbox"
-                                                checked={isChecked}
-                                                onChange={() => handleToggleSelection('allowed_roles', role.id)}
-                                                style={{ cursor: 'pointer', accentColor: '#6366f1' }}
-                                            />
-                                            {role.name}
-                                        </label>
-                                    );
-                                })
-                            )}
-                        </div>
-                        {errors.allowed_roles && <Err>{errors.allowed_roles}</Err>}
-                    </div> */}
 
                     {/* Code Type */}
                     <div style={{ marginBottom: '1.25rem' }}>

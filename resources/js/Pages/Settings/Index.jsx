@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Head, router, usePage, Link } from '@inertiajs/react';
 import DmsLayout from '@/Layouts/DmsLayout';
 
@@ -23,7 +23,8 @@ export default function SettingsIndex({ settings, systemInfo }) {
         backup_retention:     s('backup_retention',     '30'),
     });
 
-    const [saving, setSaving] = useState(false);
+    const [saving, setSaving]     = useState(false);
+    const [activeTab, setActiveTab] = useState('general');
 
     function set(key, value) { setForm(f => ({ ...f, [key]: value })); }
 
@@ -72,6 +73,20 @@ export default function SettingsIndex({ settings, systemInfo }) {
             {/* ── Content ─────────────────────────────────────────── */}
             <div style={{ padding: '1.5rem', background: '#f9fafb', minHeight: 'calc(100vh - 53px - 73px)' }}>
 
+                {/* Tab bar */}
+                <div style={{ display: 'flex', borderBottom: '2px solid #e2e8f0', marginBottom: '1.5rem', gap: 0 }}>
+                    {[['general','General Settings'], ['code','Code Format']].map(([key, label]) => (
+                        <button key={key} type="button" onClick={() => setActiveTab(key)} style={{
+                            padding: '0.55rem 1.25rem', fontSize: '0.83rem', fontWeight: 600, border: 'none',
+                            borderBottom: activeTab === key ? '2px solid #2563eb' : '2px solid transparent',
+                            marginBottom: -2, background: 'none', cursor: 'pointer',
+                            color: activeTab === key ? '#2563eb' : '#64748b',
+                            transition: 'color 0.15s',
+                        }}>{label}</button>
+                    ))}
+                </div>
+
+                {activeTab === 'general' && <>
                 {flash?.success && (
                     <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '0.7rem 1rem', marginBottom: '1.25rem', fontSize: '0.83rem', color: '#16a34a', fontWeight: 500 }}>
                         {flash.success}
@@ -254,6 +269,10 @@ export default function SettingsIndex({ settings, systemInfo }) {
                         </div>
                     </div>
                 </form>
+                </>}
+
+                {activeTab === 'code' && <CodeCustomizer />}
+
             </div>
         </DmsLayout>
     );
@@ -337,3 +356,261 @@ function DangerIcon()   { return <svg width="14" height="14" fill="none" stroke=
 
 const inputStyle = { width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: '0.83rem', color: '#334155', background: '#f8fafc', outline: 'none', boxSizing: 'border-box', transition: 'all 0.15s' };
 const qaStyle    = { display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '0.6rem 1rem', border: '1px solid #f1f5f9', background: 'rgba(248,250,252,0.5)', borderRadius: 8, fontSize: '0.78rem', fontWeight: 700, color: '#475569', cursor: 'pointer', textDecoration: 'none', transition: 'background 0.15s' };
+
+// ── Code Format Customizer Tab ────────────────────────────────────────────────
+
+function useScript(src) {
+    const [loaded, setLoaded] = useState(false);
+    useEffect(() => {
+        if (document.querySelector(`script[src="${src}"]`)) { setLoaded(true); return; }
+        const el = document.createElement('script');
+        el.src = src;
+        el.onload = () => setLoaded(true);
+        document.head.appendChild(el);
+    }, [src]);
+    return loaded;
+}
+
+function CodeCustomizer() {
+    const [codeTab, setCodeTab] = useState('qr');
+    return (
+        <div>
+            <div style={{ display: 'flex', gap: 8, marginBottom: '1.5rem' }}>
+                {[['qr','⬛ QR Code'], ['barcode','▐▌ Barcode']].map(([k, l]) => (
+                    <button key={k} type="button" onClick={() => setCodeTab(k)} style={{
+                        padding: '0.5rem 1.2rem', fontSize: '0.83rem', fontWeight: 600, borderRadius: 8,
+                        border: codeTab === k ? '2px solid #6366f1' : '2px solid #e2e8f0',
+                        background: codeTab === k ? '#eef2ff' : '#fff',
+                        color: codeTab === k ? '#4f46e5' : '#64748b',
+                        cursor: 'pointer', transition: 'all 0.15s',
+                    }}>{l}</button>
+                ))}
+            </div>
+            {codeTab === 'qr'      && <QrCustomizer />}
+            {codeTab === 'barcode' && <BarcodeCustomizer />}
+        </div>
+    );
+}
+
+// ── QR Code Customizer ────────────────────────────────────────────────────────
+function QrCustomizer() {
+    const qrLoaded = useScript('https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js');
+    const qrRef    = useRef(null);
+
+    const [data,       setData]       = useState('https://google.com');
+    const [labelText,  setLabelText]  = useState('Scan Me!');
+    const [showLabel,  setShowLabel]  = useState(true);
+    const [showLink,   setShowLink]   = useState(false);
+    const [layout,     setLayout]     = useState('label-top');
+    const [qrColor,    setQrColor]    = useState('#000000');
+    const [labelColor, setLabelColor] = useState('#212529');
+    const [size,       setSize]       = useState(200);
+
+    useEffect(() => {
+        if (!qrLoaded || !qrRef.current) return;
+        qrRef.current.innerHTML = '';
+        try {
+            new window.QRCode(qrRef.current, {
+                text: data || ' ',
+                width: size, height: size,
+                colorDark: qrColor,
+                colorLight: '#ffffff',
+                correctLevel: window.QRCode.CorrectLevel.H,
+            });
+        } catch {}
+    }, [qrLoaded, data, size, qrColor]);
+
+    const flexDir = { 'label-top': 'column', 'label-bottom': 'column-reverse', 'label-left': 'row', 'label-right': 'row-reverse' }[layout];
+
+    return (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', alignItems: 'start' }}>
+            {/* Controls */}
+            <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: '1.25rem', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+                <h3 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', margin: '0 0 1.25rem' }}>QR Code Settings</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <CField label="QR Code Data / Link">
+                        <CInput value={data} onChange={setData} placeholder="Enter URL or text" />
+                    </CField>
+                    <CField label="Label Text">
+                        <CInput value={labelText} onChange={setLabelText} placeholder="Enter label" />
+                    </CField>
+                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '0.85rem' }}>
+                        <p style={{ fontSize: '0.68rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 0.6rem' }}>Visibility</p>
+                        <CToggleRow label="Show Text Label" checked={showLabel} onChange={setShowLabel} />
+                        <CToggleRow label="Show QR Code Link" checked={showLink} onChange={setShowLink} />
+                    </div>
+                    <CField label="Layout Position">
+                        <select value={layout} onChange={e => setLayout(e.target.value)} style={cInputSt}>
+                            <option value="label-top">Label on Top, QR on Bottom</option>
+                            <option value="label-bottom">QR on Top, Label on Bottom</option>
+                            <option value="label-left">Label on Left, QR on Right</option>
+                            <option value="label-right">QR on Left, Label on Right</option>
+                        </select>
+                    </CField>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                        <CField label="QR Color">
+                            <input type="color" value={qrColor} onChange={e => setQrColor(e.target.value)} style={{ ...cInputSt, padding: '0.2rem', height: 38, cursor: 'pointer' }} />
+                        </CField>
+                        <CField label="Label Color">
+                            <input type="color" value={labelColor} onChange={e => setLabelColor(e.target.value)} style={{ ...cInputSt, padding: '0.2rem', height: 38, cursor: 'pointer' }} />
+                        </CField>
+                    </div>
+                    <CField label={`QR Code Size: ${size}px`}>
+                        <input type="range" min={128} max={300} step={16} value={size} onChange={e => setSize(Number(e.target.value))} style={{ width: '100%' }} />
+                    </CField>
+                </div>
+            </div>
+
+            {/* Live Preview */}
+            <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: '1.25rem', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+                <h3 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', margin: '0 0 1.25rem' }}>Live Preview</h3>
+                <div style={{ background: '#f8fafc', borderRadius: 10, padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 340 }}>
+                    <div style={{
+                        display: 'flex', flexDirection: flexDir, alignItems: 'center', justifyContent: 'center',
+                        padding: 20, border: '2px dashed #e2e8f0', borderRadius: 12, background: '#fff', gap: 10,
+                        transition: 'flex-direction 0.2s',
+                    }}>
+                        {showLabel && (
+                            <div style={{ fontSize: '1.1rem', fontWeight: 600, color: labelColor, textAlign: 'center', wordBreak: 'break-word', margin: 8 }}>
+                                {labelText || 'Label'}
+                            </div>
+                        )}
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                            <div ref={qrRef} style={{ display: 'inline-block' }} />
+                            {showLink && (
+                                <div style={{ fontSize: '0.78rem', color: labelColor, wordBreak: 'break-all', textAlign: 'center', maxWidth: 240, marginTop: 4 }}>
+                                    {data}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+                <p style={{ fontSize: '0.72rem', color: '#94a3b8', textAlign: 'center', marginTop: 10 }}>Changes apply instantly as you tweak the settings.</p>
+            </div>
+        </div>
+    );
+}
+
+// ── Barcode Customizer ────────────────────────────────────────────────────────
+function BarcodeCustomizer() {
+    const bcLoaded = useScript('https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js');
+    const svgRef   = useRef(null);
+
+    const [data,         setData]         = useState('CODE128DEMO');
+    const [labelText,    setLabelText]    = useState('Product Package');
+    const [showLabel,    setShowLabel]    = useState(true);
+    const [showLink,     setShowLink]     = useState(false);
+    const [layout,       setLayout]       = useState('label-top');
+    const [barcodeColor, setBarcodeColor] = useState('#000000');
+    const [labelColor,   setLabelColor]   = useState('#212529');
+    const [barWidth,     setBarWidth]     = useState(2);
+    const [barHeight,    setBarHeight]    = useState(80);
+
+    useEffect(() => {
+        if (!bcLoaded || !svgRef.current) return;
+        try {
+            window.JsBarcode(svgRef.current, data || ' ', {
+                format: 'CODE128', width: barWidth, height: barHeight,
+                lineColor: barcodeColor, background: 'transparent', displayValue: false,
+            });
+            svgRef.current.style.maxWidth = '100%';
+        } catch {}
+    }, [bcLoaded, data, barWidth, barHeight, barcodeColor]);
+
+    const flexDir = { 'label-top': 'column', 'label-bottom': 'column-reverse', 'label-left': 'row', 'label-right': 'row-reverse' }[layout];
+
+    return (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', alignItems: 'start' }}>
+            {/* Controls */}
+            <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: '1.25rem', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+                <h3 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', margin: '0 0 1.25rem' }}>Barcode Settings</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <CField label="Barcode Value / Data">
+                        <CInput value={data} onChange={setData} placeholder="Enter alphanumeric text" />
+                    </CField>
+                    <CField label="Label Text">
+                        <CInput value={labelText} onChange={setLabelText} placeholder="Enter label" />
+                    </CField>
+                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '0.85rem' }}>
+                        <p style={{ fontSize: '0.68rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 0.6rem' }}>Visibility</p>
+                        <CToggleRow label="Show Text Label" checked={showLabel} onChange={setShowLabel} />
+                        <CToggleRow label="Show Plaintext Value Below" checked={showLink} onChange={setShowLink} />
+                    </div>
+                    <CField label="Layout Position">
+                        <select value={layout} onChange={e => setLayout(e.target.value)} style={cInputSt}>
+                            <option value="label-top">Label on Top, Barcode on Bottom</option>
+                            <option value="label-bottom">Barcode on Top, Label on Bottom</option>
+                            <option value="label-left">Label on Left, Barcode on Right</option>
+                            <option value="label-right">Barcode on Left, Label on Right</option>
+                        </select>
+                    </CField>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                        <CField label="Barcode Color">
+                            <input type="color" value={barcodeColor} onChange={e => setBarcodeColor(e.target.value)} style={{ ...cInputSt, padding: '0.2rem', height: 38, cursor: 'pointer' }} />
+                        </CField>
+                        <CField label="Label Color">
+                            <input type="color" value={labelColor} onChange={e => setLabelColor(e.target.value)} style={{ ...cInputSt, padding: '0.2rem', height: 38, cursor: 'pointer' }} />
+                        </CField>
+                    </div>
+                    <CField label={`Bar Width: ${barWidth}`}>
+                        <input type="range" min={1} max={4} step={1} value={barWidth} onChange={e => setBarWidth(Number(e.target.value))} style={{ width: '100%' }} />
+                    </CField>
+                    <CField label={`Bar Height: ${barHeight}px`}>
+                        <input type="range" min={40} max={150} step={10} value={barHeight} onChange={e => setBarHeight(Number(e.target.value))} style={{ width: '100%' }} />
+                    </CField>
+                </div>
+            </div>
+
+            {/* Live Preview */}
+            <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: '1.25rem', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+                <h3 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', margin: '0 0 1.25rem' }}>Live Preview</h3>
+                <div style={{ background: '#f8fafc', borderRadius: 10, padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 340 }}>
+                    <div style={{
+                        display: 'flex', flexDirection: flexDir, alignItems: 'center', justifyContent: 'center',
+                        padding: 25, border: '2px dashed #e2e8f0', borderRadius: 12, background: '#fff', gap: 10,
+                        transition: 'flex-direction 0.2s',
+                    }}>
+                        {showLabel && (
+                            <div style={{ fontSize: '1.1rem', fontWeight: 600, color: labelColor, textAlign: 'center', wordBreak: 'break-word', margin: 8 }}>
+                                {labelText || 'Label'}
+                            </div>
+                        )}
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                            <svg ref={svgRef} style={{ maxWidth: '100%', height: 'auto' }} />
+                            {showLink && (
+                                <div style={{ fontSize: '0.82rem', color: labelColor, wordBreak: 'break-all', textAlign: 'center', maxWidth: 300, marginTop: 4 }}>
+                                    {data}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+                <p style={{ fontSize: '0.72rem', color: '#94a3b8', textAlign: 'center', marginTop: 10 }}>Changes apply instantly as you tweak the settings.</p>
+            </div>
+        </div>
+    );
+}
+
+// ── Code Customizer shared helpers ────────────────────────────────────────────
+function CField({ label, children }) {
+    return (
+        <div>
+            <label style={{ display: 'block', fontSize: '0.68rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 6 }}>{label}</label>
+            {children}
+        </div>
+    );
+}
+function CInput({ value, onChange, placeholder }) {
+    return <input type="text" value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} style={cInputSt} />;
+}
+function CToggleRow({ label, checked, onChange }) {
+    return (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+            <span style={{ fontSize: '0.82rem', color: '#475569' }}>{label}</span>
+            <div onClick={() => onChange(!checked)} style={{ width: 34, height: 18, borderRadius: 999, background: checked ? '#6366f1' : '#e2e8f0', position: 'relative', cursor: 'pointer', transition: 'background 0.2s', flexShrink: 0 }}>
+                <div style={{ position: 'absolute', top: 2, left: checked ? 16 : 2, width: 14, height: 14, borderRadius: '50%', background: '#fff', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
+            </div>
+        </div>
+    );
+}
+const cInputSt = { width: '100%', padding: '0.47rem 0.75rem', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: '0.83rem', color: '#334155', background: '#f8fafc', outline: 'none', boxSizing: 'border-box' };
