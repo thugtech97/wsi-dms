@@ -17,6 +17,7 @@ export default function DmsLayout({ activePage, onScanChange, onSearchEnter, chi
     const { auth, unreadNotificationsCount } = usePage().props;
     const { isMobile, isTablet } = useResponsive();
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [scanCount, setScanCount]     = useState(() => typeof window === 'undefined' ? 0 : Number(localStorage.getItem('dms-scan-count') ?? 0));
     const notifCount = unreadNotificationsCount ?? 0;
     const isAdmin    = auth?.user?.role === 'admin';
     const NAV_ITEMS  = ALL_NAV_ITEMS.filter(item => !item.adminOnly || isAdmin);
@@ -60,7 +61,12 @@ export default function DmsLayout({ activePage, onScanChange, onSearchEnter, chi
     function handleSuggestionClick(doc) {
         setQuery(''); setSuggestions([]); setShowDropdown(false);
         onScanChange && onScanChange('');
-        router.visit(route('documents.index', { open: doc.id }));
+        setScanCount(count => {
+            const nextCount = count + 1;
+            window.localStorage.setItem('dms-scan-count', String(nextCount));
+            return nextCount;
+        });
+        router.post(route('documents.scan', doc.id));
     }
 
     function clearSearch() {
@@ -152,6 +158,9 @@ export default function DmsLayout({ activePage, onScanChange, onSearchEnter, chi
 
                 {/* Right: user */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.82rem', color: '#64748b', flexShrink: 0 }}>
+                    <span title="Documents opened by scanning" style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '0.28rem 0.5rem', color: '#4f46e5', background: '#eef2ff', borderRadius: 999, fontSize: '0.72rem', fontWeight: 700 }}>
+                        <ScanIcon /> {scanCount}
+                    </span>
                     <BadgeIcon />
                     {!isMobile && <span>{auth?.user?.name ?? 'Guest'}</span>}
                 </div>
@@ -358,6 +367,9 @@ function FolderTreeIcon() {
 }
 function BarcodeIcon() {
     return <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" d="M4 6v12M8 6v12M12 6v12M16 6v12M20 6v12"/></svg>;
+}
+function ScanIcon() {
+    return <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" d="M4 4v5M4 15v5M20 4v5M20 15v5M8 4h3M13 4h3M8 20h3M13 20h3"/><path strokeLinecap="round" d="M8 12h8M12 8v8"/></svg>;
 }
 function XIcon() {
     return <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" d="M6 18L18 6M6 6l12 12"/></svg>;

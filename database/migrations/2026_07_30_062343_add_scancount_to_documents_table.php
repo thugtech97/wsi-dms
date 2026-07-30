@@ -12,9 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('documents', function (Blueprint $table) {
-            $table->string('link_document_url')->nullable()->after('storage_location');
-            $table->string('allowed_users')->nullable();
-            $table->string('allowed_roles')->nullable();
+            $table->integer('scan_count')->default(0);
         });
     }
 
@@ -24,9 +22,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('documents', function (Blueprint $table) {
-            $table->dropColumn('link_document_url');
-            $table->dropColumn('allowed_users');
-            $table->dropColumn('allowed_roles');
+            $table->dropColumn('scan_count');
         });
     }
 };

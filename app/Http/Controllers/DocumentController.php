@@ -154,6 +154,13 @@ class DocumentController extends Controller
         return redirect()->route('documents.index');
     }
 
+    public function recordScan(Document $document)
+    {
+        $document->increment('scan_count');
+
+        return redirect()->route('documents.index', ['open' => $document->id]);
+    }
+
     public function destroy(Document $document)
     {
         $files = array_filter([$document->file_path, $document->code_image_path]);

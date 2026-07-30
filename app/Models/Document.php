@@ -23,6 +23,7 @@ class Document extends Model implements Auditable
         'link_document_url',
         'allowed_users',
         'allowed_roles',
+        'scan_count',
     ];
 
     // Only audit what's meaningful
@@ -36,6 +37,7 @@ class Document extends Model implements Auditable
         'link_document_url',
         'allowed_users',
         'allowed_roles',
+        'scan_count',
     ];
 
     public function documentType(): BelongsTo
