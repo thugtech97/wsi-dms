@@ -82,7 +82,7 @@ export default function UploadPanel({ documentTypes, users = [], roles = [], onS
                     </div>
 
                     {/* Department */}
-                    <div style={{ marginBottom: '1rem' }}>
+                    {/* <div style={{ marginBottom: '1rem' }}>
                         <label style={labelStyle}>Department</label>
                         <input
                             type="text"
@@ -92,7 +92,7 @@ export default function UploadPanel({ documentTypes, users = [], roles = [], onS
                             style={inputStyle}
                         />
                         {errors.department && <Err>{errors.department}</Err>}
-                    </div>
+                    </div> */}
 
                     {/* Link / Document URL */}
                     <div style={{ marginBottom: '1rem' }}>
@@ -108,7 +108,7 @@ export default function UploadPanel({ documentTypes, users = [], roles = [], onS
                     </div>
                     
                     {/* Allowed Users Multi-Select List */}
-                    <div style={{ marginBottom: '1rem' }}>
+                    {/* <div style={{ marginBottom: '1rem' }}>
                         <label style={labelStyle}>Assign to Specific Users</label>
                         <div style={listContainerStyle}>
                             {users.length === 0 ? (
@@ -131,10 +131,10 @@ export default function UploadPanel({ documentTypes, users = [], roles = [], onS
                             )}
                         </div>
                         {errors.allowed_users && <Err>{errors.allowed_users}</Err>}
-                    </div>
+                    </div> */}
 
                     {/* Allowed Roles Multi-Select List */}
-                    <div style={{ marginBottom: '1rem' }}>
+                    {/* <div style={{ marginBottom: '1rem' }}>
                         <label style={labelStyle}>Assign to System Roles</label>
                         <div style={listContainerStyle}>
                             {roles.length === 0 ? (
@@ -157,7 +157,7 @@ export default function UploadPanel({ documentTypes, users = [], roles = [], onS
                             )}
                         </div>
                         {errors.allowed_roles && <Err>{errors.allowed_roles}</Err>}
-                    </div>
+                    </div> */}
 
                     {/* Code Type */}
                     <div style={{ marginBottom: '1.25rem' }}>

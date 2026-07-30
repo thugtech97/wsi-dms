@@ -59,6 +59,12 @@ export default function DocumentFilter({ filters, onChange, onClear, documentTyp
                         >
                             Clear
                         </button>
+                        <button
+                            onClick={onClear}
+                            style={{ padding: '0.47rem 0.85rem', fontSize: '0.82rem', border: '1px solid #e2e8f0', borderRadius: 6, background: '#6366f1', color: '#fff', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
+                        >
+                            Add New Document
+                        </button>
                     </div>
                 </div>
             </div>
