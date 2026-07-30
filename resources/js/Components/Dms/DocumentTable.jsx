@@ -30,7 +30,7 @@ export default function DocumentTable({ documents }) {
                                 <th style={TH}>Label</th>
                                 <th style={TH}>Document Class</th>
                                 {!isMobile && <th style={TH}>URL</th>}
-                                {/* {!isMobile && <th style={TH}>Department</th>} */}
+                                {!isMobile && <th style={TH}>Department</th>}
                                 {!isMobile && <th style={TH}>Added By</th>}
                                 {!isMobile && <th style={TH}>Document Date</th>}
                                 <th style={{ ...TH, width: 40 }}></th>
@@ -94,7 +94,7 @@ function DocumentRow({ doc, onView, isMobile }) {
                 <Badge type={doc.type} />
             </td>
             {!isMobile && <td style={TD}><span style={{ color: '#64748b', fontSize: '0.82rem' }}>{doc.link_document_url}</span></td>}
-            {/* {!isMobile && <td style={TD}><span style={{ color: '#64748b', fontSize: '0.82rem' }}>{doc.department}</span></td>} */}
+            {!isMobile && <td style={TD}><span style={{ color: '#64748b', fontSize: '0.82rem' }}>{doc.department}</span></td>}
             {!isMobile && <td style={TD}><span style={{ color: '#64748b', fontSize: '0.82rem' }}>{doc.owner}</span></td>}
             {!isMobile && <td style={TD}><span style={{ color: '#64748b', fontSize: '0.82rem' }}>{doc.documentDate}</span></td>}
             <td style={{ ...TD, padding: isMobile ? '0.6rem 0.5rem' : TD.padding }}>
