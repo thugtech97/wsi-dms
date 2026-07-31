@@ -43,6 +43,7 @@ class DocumentController extends Controller
                 'link_document_url' => $d->link_document_url,
                 'allowed_users'     => $d->allowed_users ? json_decode($d->allowed_users, true) : [],
                 'allowed_roles'     => $d->allowed_roles ? json_decode($d->allowed_roles, true) : [],
+                'scanCount'         => $d->scan_count,
             ]);
 
         return Inertia::render('Documents/Index', [

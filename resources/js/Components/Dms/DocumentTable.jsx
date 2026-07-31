@@ -33,6 +33,7 @@ export default function DocumentTable({ documents, documentTypes = [], users = [
                                 {/* {!isMobile && <th style={TH}>Department</th>} */}
                                 {!isMobile && <th style={TH}>Added By</th>}
                                 {!isMobile && <th style={TH}>Document Date</th>}
+                                {!isMobile && <th style={TH}>Scan Count</th>}
                                 <th style={{ ...TH, width: 40 }}></th>
                             </tr>
                         </thead>
@@ -103,6 +104,7 @@ function DocumentRow({ doc, onView, isMobile }) {
             {/* {!isMobile && <td style={TD}><span style={{ color: '#64748b', fontSize: '0.82rem' }}>{doc.department}</span></td>} */}
             {!isMobile && <td style={TD}><span style={{ color: '#64748b', fontSize: '0.82rem' }}>{doc.owner}</span></td>}
             {!isMobile && <td style={TD}><span style={{ color: '#64748b', fontSize: '0.82rem' }}>{doc.documentDate}</span></td>}
+            {!isMobile && <td style={TD}><span style={{ color: '#64748b', fontSize: '0.82rem' }}>{doc.scanCount}</span></td>}
             <td style={{ ...TD, padding: isMobile ? '0.6rem 0.5rem' : TD.padding }}>
                 <button
                     onClick={onView}
