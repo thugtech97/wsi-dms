@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Document;
+use App\Models\DocumentFormField;
 use App\Models\SystemSetting;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -30,6 +31,11 @@ class SettingsController extends Controller
 
         return Inertia::render('Settings/Index', [
             'settings'   => $settings,
+            'formFields' => DocumentFormField::ordered()->get()->map->toFormArray()->values(),
+            'fieldTypes' => collect(DocumentFormField::TYPES)
+                                ->map(fn ($label, $value) => ['value' => $value, 'label' => $label])
+                                ->values(),
+            'choiceTypes' => DocumentFormField::CHOICE_TYPES,
             'systemInfo' => [
                 'version'        => config('app.version', 'v1.0.0'),
                 'environment'    => ucfirst(app()->environment()),

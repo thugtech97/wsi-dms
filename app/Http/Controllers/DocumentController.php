@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Document;
+use App\Models\DocumentFormField;
 use App\Models\DocumentType;
 use App\Models\User;
 use Spatie\Permission\Models\Role;
@@ -43,6 +44,7 @@ class DocumentController extends Controller
                 'link_document_url' => $d->link_document_url,
                 'allowed_users'     => $d->allowed_users ? json_decode($d->allowed_users, true) : [],
                 'allowed_roles'     => $d->allowed_roles ? json_decode($d->allowed_roles, true) : [],
+                'custom_fields'     => $d->custom_fields ?? [],
                 'scanCount'         => $d->scan_count,
             ]);
 
@@ -51,6 +53,8 @@ class DocumentController extends Controller
             'documentTypes' => DocumentType::orderBy('name')->get(),
             'users'         => User::orderBy('name')->get(),
             'roles'         => Role::orderBy('name')->get(),
+            'formFields'    => DocumentFormField::active()->ordered()->get()
+                                   ->map->toFormArray()->values(),
             'filters'       => $request->only(['label', 'type', 'department']),
             'openDocId'     => $request->integer('open') ?: null,
         ]);
@@ -86,16 +90,14 @@ class DocumentController extends Controller
 
     public function store(Request $request)
     {
-        
-        $request->validate([
-            'label'             => 'required|string|max:255',
-            'document_type_id'  => 'required|exists:document_types,id',
-            'department'        => 'nullable|string|max:255',
-            'link_document_url' => 'nullable|string',
-            'allowed_users'     => 'nullable|array',
-            'allowed_roles'     => 'nullable|array',
-            'code_type'         => 'required|in:QR,Barcode',
-        ]);
+        $fields = DocumentFormField::active()->ordered()->get();
+
+        // Tracking code is never part of the customisable schema — it is always required.
+        $request->validate(
+            $this->schemaRules($fields) + ['code_type' => 'required|in:QR,Barcode'],
+            [],
+            $this->schemaAttributes($fields),
+        );
 
         $randNum = rand(10000, 99999);
 
@@ -112,19 +114,13 @@ class DocumentController extends Controller
             Storage::disk('public')->put($codePath, $svg);
         }
 
-        $document = Document::create([
-            'name'              => $request->label,
-            'department'        => $request->department,
-            'file_path'         => null,
-            'link_document_url' => $request->link_document_url,
-            'document_type_id'  => $request->document_type_id,
-            'owner_id'          => auth()->id(),
-            'code_type'         => $request->code_type,
-            'code_id'           => $codeId,
-            'code_image_path'   => $codePath,
-            'storage_location'  => null,
-            'allowed_users'     => json_encode($request->allowed_users),
-            'allowed_roles'     => json_encode($request->allowed_roles),
+        $document = Document::create($this->schemaPayload($request, $fields) + [
+            'file_path'        => null,
+            'owner_id'         => auth()->id(),
+            'code_type'        => $request->code_type,
+            'code_id'          => $codeId,
+            'code_image_path'  => $codePath,
+            'storage_location' => null,
         ]);
 
         auth()->user()->notify(new DocumentUploadedNotification($document));
@@ -134,25 +130,59 @@ class DocumentController extends Controller
 
     public function update(Request $request, Document $document)
     {
-        $request->validate([
-            'label'             => 'required|string|max:255',
-            'document_type_id'  => 'required|exists:document_types,id',
-            'department'        => 'nullable|string|max:255',
-            'link_document_url' => 'nullable|string',
-            'allowed_users'     => 'nullable|array',
-            'allowed_roles'     => 'nullable|array',
-        ]);
+        $fields = DocumentFormField::active()->ordered()->get();
 
-        $document->update([
-            'name'              => $request->label,
-            'department'        => $request->department,
-            'link_document_url' => $request->link_document_url,
-            'document_type_id'  => $request->document_type_id,
-            'allowed_users'     => $request->allowed_users ? json_encode($request->allowed_users) : null,
-            'allowed_roles'     => $request->allowed_roles ? json_encode($request->allowed_roles) : null,
-        ]);
+        $request->validate($this->schemaRules($fields), [], $this->schemaAttributes($fields));
+
+        $document->update($this->schemaPayload($request, $fields, $document));
 
         return redirect()->route('documents.index');
+    }
+
+    /**
+     * Validation rules built from the admin-managed form schema.
+     */
+    private function schemaRules($fields): array
+    {
+        return $fields->mapWithKeys(fn (DocumentFormField $f) => [$f->key => $f->validationRules()])->all();
+    }
+
+    /**
+     * Use the admin's labels in validation messages instead of raw keys.
+     */
+    private function schemaAttributes($fields): array
+    {
+        return $fields->mapWithKeys(fn (DocumentFormField $f) => [$f->key => strtolower($f->label)])->all();
+    }
+
+    /**
+     * Split submitted values into real columns and the custom_fields JSON bag.
+     */
+    private function schemaPayload(Request $request, $fields, ?Document $document = null): array
+    {
+        $attributes = [];
+        $custom     = $document?->custom_fields ?? [];
+
+        foreach ($fields as $field) {
+            $value = $field->castForStorage($request->input($field->key));
+
+            if (! $field->column_name) {
+                $custom[$field->key] = $value;
+                continue;
+            }
+
+            // allowed_users / allowed_roles are string columns holding JSON.
+            if ($field->isMulti() && in_array($field->column_name, ['allowed_users', 'allowed_roles'], true)) {
+                $attributes[$field->column_name] = $value ? json_encode($value) : null;
+                continue;
+            }
+
+            $attributes[$field->column_name] = $field->isMulti() ? json_encode($value) : $value;
+        }
+
+        $attributes['custom_fields'] = $custom ?: null;
+
+        return $attributes;
     }
 
     public function recordScan(Document $document)
