@@ -3,7 +3,7 @@ import { Head, router, Link } from '@inertiajs/react';
 import DmsLayout from '@/Layouts/DmsLayout';
 
 export default function ReportsIndex({ tab, userActivity, documentList, users, docTypes, filters }) {
-    const activeTab = tab ?? 'user-activity';
+    const activeTab = tab ?? 'document-list';
 
     function switchTab(t) {
         router.get(route('reports.index'), { ...filters, tab: t }, { preserveState: false, replace: true });
@@ -41,8 +41,8 @@ export default function ReportsIndex({ tab, userActivity, documentList, users, d
                 {/* Tabs */}
                 <div style={{ display: 'flex', gap: 0, marginBottom: '1.25rem', borderBottom: '2px solid #e2e8f0' }}>
                     {[
-                        { key: 'user-activity', label: 'User Activity' },
                         { key: 'document-list', label: 'Document List per Type' },
+                        { key: 'user-activity', label: 'User Activity' },
                     ].map(t => (
                         <button key={t.key} onClick={() => switchTab(t.key)} style={{
                             padding: '0.65rem 1.25rem', fontWeight: 600, fontSize: '0.85rem', border: 'none', background: 'none', cursor: 'pointer',
@@ -139,10 +139,11 @@ function UserActivityTab({ data, users, filters }) {
 
 function DocumentListTab({ data, docTypes, filters }) {
     const [form, setForm] = useState({
-        dl_type: filters.dl_type ?? '',
-        dl_user: filters.dl_user ?? '',
-        dl_from: filters.dl_from ?? '',
-        dl_to:   filters.dl_to   ?? '',
+        dl_type:  filters.dl_type  ?? '',
+        dl_label: filters.dl_label ?? '',
+        dl_dept:  filters.dl_dept  ?? '',
+        dl_from:  filters.dl_from  ?? '',
+        dl_to:    filters.dl_to    ?? '',
     });
 
     function apply(e) {
@@ -150,7 +151,7 @@ function DocumentListTab({ data, docTypes, filters }) {
         router.get(route('reports.index'), { tab: 'document-list', ...form }, { preserveState: true, replace: true });
     }
     function clear() {
-        const empty = { dl_type: '', dl_user: '', dl_from: '', dl_to: '' };
+        const empty = { dl_type: '', dl_label: '', dl_dept: '', dl_from: '', dl_to: '' };
         setForm(empty);
         router.get(route('reports.index'), { tab: 'document-list', ...empty }, { replace: true });
     }
@@ -159,19 +160,22 @@ function DocumentListTab({ data, docTypes, filters }) {
         <>
             {/* Filters */}
             <form onSubmit={apply} style={filterBarStyle}>
-                <FilterField label="Document Type">
+                <FilterField label="Document Class">
                     <select value={form.dl_type} onChange={e => setForm(f => ({ ...f, dl_type: e.target.value }))} style={inputStyle}>
-                        <option value="">All Types</option>
+                        <option value="">All Classes</option>
                         {docTypes.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
                     </select>
                 </FilterField>
-                <FilterField label="User">
-                    <input type="text" value={form.dl_user} onChange={e => setForm(f => ({ ...f, dl_user: e.target.value }))} placeholder="Filter by owner..." style={inputStyle} />
+                <FilterField label="Label">
+                    <input type="text" value={form.dl_label} onChange={e => setForm(f => ({ ...f, dl_label: e.target.value }))} placeholder="Search label…" style={inputStyle} />
                 </FilterField>
-                <FilterField label="Uploaded From">
+                <FilterField label="Department">
+                    <input type="text" value={form.dl_dept} onChange={e => setForm(f => ({ ...f, dl_dept: e.target.value }))} placeholder="Filter by department…" style={inputStyle} />
+                </FilterField>
+                <FilterField label="Date From">
                     <input type="date" value={form.dl_from} onChange={e => setForm(f => ({ ...f, dl_from: e.target.value }))} style={inputStyle} />
                 </FilterField>
-                <FilterField label="Uploaded To">
+                <FilterField label="Date To">
                     <input type="date" value={form.dl_to} onChange={e => setForm(f => ({ ...f, dl_to: e.target.value }))} style={inputStyle} />
                 </FilterField>
                 <div style={{ display: 'flex', gap: '0.5rem', alignSelf: 'flex-end' }}>
@@ -183,7 +187,7 @@ function DocumentListTab({ data, docTypes, filters }) {
             {/* Table */}
             <DataTable
                 total={data.total}
-                headers={['QR / Barcode','Document Name','Document Type','Uploaded Date','User']}
+                headers={['Asset', 'Label', 'Document Class', 'Department', 'Added By', 'Document Date']}
                 empty="No documents found."
                 links={data.links}
                 from={data.from} to={data.to}
@@ -201,14 +205,15 @@ function DocumentListTab({ data, docTypes, filters }) {
                                 <span style={{ fontSize: '0.62rem', color: '#94a3b8', fontFamily: 'monospace' }}>{doc.codeId}</span>
                             </div>
                         </td>
-                        <td style={{ ...tdStyle, fontWeight: 600, color: '#0f172a' }}>{doc.name}</td>
+                        <td style={{ ...tdStyle, fontWeight: 600, color: '#0f172a' }}>{doc.label}</td>
                         <td style={tdStyle}>
                             <span style={{ background: '#eef2ff', color: '#4f46e5', borderRadius: 4, padding: '0.15rem 0.5rem', fontSize: '0.72rem', fontWeight: 600 }}>
                                 {doc.type}
                             </span>
                         </td>
-                        <td style={{ ...tdStyle, color: '#64748b', whiteSpace: 'nowrap' }}>{doc.uploadedDate}</td>
-                        <td style={tdStyle}>{doc.owner}</td>
+                        <td style={{ ...tdStyle, color: '#64748b' }}>{doc.department}</td>
+                        <td style={{ ...tdStyle, color: '#64748b' }}>{doc.owner}</td>
+                        <td style={{ ...tdStyle, color: '#64748b', whiteSpace: 'nowrap' }}>{doc.documentDate}</td>
                     </tr>
                 ))}
             </DataTable>

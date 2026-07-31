@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
-import { router, useForm } from '@inertiajs/react';
+import { router } from '@inertiajs/react';
 import Badge from './Badge';
 import { useResponsive } from '@/hooks/useResponsive';
 
 const TH = { fontWeight: 600, textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.5px', color: '#64748b', padding: '0.85rem 1.25rem', borderBottom: '2px solid #f1f5f9', background: '#f8fafc' };
 const TD = { padding: '1rem 1.25rem', borderBottom: '1px solid #f1f5f9', fontSize: '0.85rem', color: '#334155' };
 
-export default function DocumentTable({ documents, documentTypes = [], users = [], roles = [] }) {
+export default function DocumentTable({ documents }) {
     const [selected, setSelected] = useState(null);
     const { isMobile, isTablet } = useResponsive();
 
@@ -33,7 +33,6 @@ export default function DocumentTable({ documents, documentTypes = [], users = [
                                 {/* {!isMobile && <th style={TH}>Department</th>} */}
                                 {!isMobile && <th style={TH}>Added By</th>}
                                 {!isMobile && <th style={TH}>Document Date</th>}
-                                {!isMobile && <th style={TH}>Scan Count</th>}
                                 <th style={{ ...TH, width: 40 }}></th>
                             </tr>
                         </thead>
@@ -53,13 +52,7 @@ export default function DocumentTable({ documents, documentTypes = [], users = [
             </div>
 
             {selected && (
-                <DocumentViewModal
-                    doc={selected}
-                    documentTypes={documentTypes}
-                    users={users}
-                    roles={roles}
-                    onClose={() => setSelected(null)}
-                />
+                <DocumentViewModal doc={selected} onClose={() => setSelected(null)} />
             )}
         </>
     );
@@ -104,7 +97,6 @@ function DocumentRow({ doc, onView, isMobile }) {
             {/* {!isMobile && <td style={TD}><span style={{ color: '#64748b', fontSize: '0.82rem' }}>{doc.department}</span></td>} */}
             {!isMobile && <td style={TD}><span style={{ color: '#64748b', fontSize: '0.82rem' }}>{doc.owner}</span></td>}
             {!isMobile && <td style={TD}><span style={{ color: '#64748b', fontSize: '0.82rem' }}>{doc.documentDate}</span></td>}
-            {!isMobile && <td style={TD}><span style={{ color: '#64748b', fontSize: '0.82rem' }}>{doc.scanCount}</span></td>}
             <td style={{ ...TD, padding: isMobile ? '0.6rem 0.5rem' : TD.padding }}>
                 <button
                     onClick={onView}
@@ -121,12 +113,11 @@ function DocumentRow({ doc, onView, isMobile }) {
 }
 
 // ── Modal ─────────────────────────────────────────────────────────────────────
-function DocumentViewModal({ doc, documentTypes, users, roles, onClose }) {
+function DocumentViewModal({ doc, onClose }) {
     const isQR = doc.codeType === 'QR';
     const [activeTab,     setActiveTab]     = useState('details');
     const [confirmDelete, setConfirmDelete] = useState(false);
     const [deleting, setDeleting]           = useState(false);
-    const [editing, setEditing]             = useState(false);
     const { isMobile }                      = useResponsive();
 
     const handleKey = useCallback(e => {
@@ -306,9 +297,6 @@ function DocumentViewModal({ doc, documentTypes, users, roles, onClose }) {
                                             <DownloadIcon /> Download File
                                         </button>
                                     )}
-                                    <button onClick={() => setEditing(true)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '0.58rem 0.9rem', background: '#fff', color: '#4f46e5', fontWeight: 600, fontSize: '0.82rem', borderRadius: 8, border: '1px solid #c7d2fe', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                                        <EditIcon /> Edit
-                                    </button>
                                     <button onClick={() => setConfirmDelete(true)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '0.58rem 0.9rem', background: '#fff', color: '#ef4444', fontWeight: 600, fontSize: '0.82rem', borderRadius: 8, border: '1px solid #fecaca', cursor: 'pointer', whiteSpace: 'nowrap' }}>
                                         <TrashIcon /> Delete
                                     </button>
@@ -356,83 +344,8 @@ function DocumentViewModal({ doc, documentTypes, users, roles, onClose }) {
                 @keyframes fadeIn  { from { opacity: 0 } to { opacity: 1 } }
                 @keyframes slideUp { from { transform: translateY(24px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
             `}</style>
-            {editing && (
-                <DocumentEditModal
-                    doc={doc}
-                    documentTypes={documentTypes}
-                    users={users}
-                    roles={roles}
-                    onClose={() => setEditing(false)}
-                    onSuccess={onClose}
-                />
-            )}
         </div>
     );
-}
-
-function DocumentEditModal({ doc, documentTypes, users, roles, onClose, onSuccess }) {
-    const { data, setData, put, processing, errors } = useForm({
-        label: doc.label ?? '',
-        document_type_id: doc.document_type_id ?? '',
-        department: doc.department === 'â€”' ? '' : (doc.department ?? ''),
-        link_document_url: doc.link_document_url ?? '',
-        allowed_users: doc.allowed_users ?? [],
-        allowed_roles: doc.allowed_roles ?? [],
-    });
-
-    const toggleSelection = (field, itemId) => {
-        const selected = data[field];
-        setData(field, selected.some(id => String(id) === String(itemId))
-            ? selected.filter(id => String(id) !== String(itemId))
-            : [...selected, itemId]);
-    };
-
-    function submit(e) {
-        e.preventDefault();
-        put(route('documents.update', doc.id), { onSuccess });
-    }
-
-    const inputStyle = { width: '100%', padding: '0.55rem 0.7rem', fontSize: '0.85rem', border: '1px solid #cbd5e1', borderRadius: 7, color: '#1e293b', outline: 'none', boxSizing: 'border-box', background: '#fff' };
-    const listStyle = { border: '1px solid #cbd5e1', borderRadius: 7, padding: '0.55rem', maxHeight: 120, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 7 };
-
-    return (
-        <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 210, background: 'rgba(15,23,42,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', backdropFilter: 'blur(3px)' }}>
-            <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 14, width: '100%', maxWidth: 560, maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 25px 80px rgba(0,0,0,0.22)', overflow: 'hidden' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem 1.25rem', borderBottom: '1px solid #e2e8f0' }}>
-                    <div>
-                        <div style={{ fontWeight: 700, color: '#0f172a' }}>Edit Document</div>
-                        <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: 2 }}>Update this document’s information.</div>
-                    </div>
-                    <button onClick={onClose} aria-label="Close edit modal" style={{ width: 30, height: 30, borderRadius: 7, background: '#f8fafc', border: '1px solid #e2e8f0', cursor: 'pointer', color: '#64748b' }}><XIcon /></button>
-                </div>
-                <form onSubmit={submit} style={{ padding: '1.25rem', overflowY: 'auto' }}>
-                    <EditField label="Label" error={errors.label}><input required value={data.label} onChange={e => setData('label', e.target.value)} style={inputStyle} onClick={e => e.target.select()} /></EditField>
-                    <EditField label="Document Class" error={errors.document_type_id}>
-                        <select required value={data.document_type_id} onChange={e => setData('document_type_id', e.target.value)} style={inputStyle}>
-                            <option value="" disabled>Choose classification…</option>
-                            {documentTypes.map(type => <option key={type.id} value={type.id}>{type.name}</option>)}
-                        </select>
-                    </EditField>
-                    {/* <EditField label="Department" error={errors.department}><input value={data.department} onChange={e => setData('department', e.target.value)} style={inputStyle} /></EditField> */}
-                    <EditField label="Link / Document URL" error={errors.link_document_url}><input value={data.link_document_url} onChange={e => setData('link_document_url', e.target.value)} style={inputStyle} onClick={e => e.target.select()} /></EditField>
-                    {/* <EditField label="Assign to Specific Users" error={errors.allowed_users}>
-                        <div style={listStyle}>{users.length ? users.map(user => <label key={user.id} style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: '0.84rem', color: '#334155', cursor: 'pointer' }}><input type="checkbox" checked={data.allowed_users.some(id => String(id) === String(user.id))} onChange={() => toggleSelection('allowed_users', user.id)} style={{ accentColor: '#6366f1' }} />{user.name}</label>) : <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>No users available</span>}</div>
-                    </EditField>
-                    <EditField label="Assign to System Roles" error={errors.allowed_roles}>
-                        <div style={listStyle}>{roles.length ? roles.map(role => <label key={role.id} style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: '0.84rem', color: '#334155', cursor: 'pointer' }}><input type="checkbox" checked={data.allowed_roles.some(id => String(id) === String(role.id))} onChange={() => toggleSelection('allowed_roles', role.id)} style={{ accentColor: '#6366f1' }} />{role.name}</label>) : <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>No roles available</span>}</div>
-                    </EditField> */}
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: '1.25rem' }}>
-                        <button type="button" onClick={onClose} disabled={processing} style={{ padding: '0.58rem 0.95rem', background: '#fff', color: '#475569', fontWeight: 600, fontSize: '0.82rem', borderRadius: 7, border: '1px solid #cbd5e1', cursor: 'pointer' }}>Cancel</button>
-                        <button type="submit" disabled={processing} style={{ padding: '0.58rem 0.95rem', background: processing ? '#a5b4fc' : '#6366f1', color: '#fff', fontWeight: 700, fontSize: '0.82rem', borderRadius: 7, border: 'none', cursor: processing ? 'not-allowed' : 'pointer' }}>{processing ? 'Updating…' : 'Update Document'}</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    );
-}
-
-function EditField({ label, error, children }) {
-    return <div style={{ marginBottom: '1rem' }}><label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: '#475569', marginBottom: 5 }}>{label}</label>{children}{error && <p style={{ color: '#ef4444', fontSize: '0.75rem', margin: '4px 0 0' }}>{error}</p>}</div>;
 }
 
 function DetailCard({ label, icon, children }) {
@@ -453,6 +366,5 @@ function XIcon() { return <svg width="18" height="18" fill="none" stroke="curren
 function DownloadIcon() { return <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>; }
 function DocumentDetailIcon() { return <svg width="16" height="16" fill="none" stroke="#6366f1" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline strokeLinecap="round" points="14 2 14 8 20 8"/><line strokeLinecap="round" x1="16" y1="13" x2="8" y2="13"/><line strokeLinecap="round" x1="16" y1="17" x2="8" y2="17"/></svg>; }
 function TrashIcon() { return <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><polyline strokeLinecap="round" points="3 6 5 6 21 6"/><path strokeLinecap="round" d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6M10 11v6M14 11v6M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>; }
-function EditIcon() { return <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 20h9"/><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4z"/></svg>; }
 function QrDownloadIcon() { return <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path strokeLinecap="round" d="M14 14h2v2h-2zM18 18h3v3h-3zM18 14v2M14 18v2"/></svg>; }
 function PrintIcon({ size = 13 }) { return <svg width={size} height={size} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><polyline strokeLinecap="round" points="6 9 6 2 18 2 18 9"/><path strokeLinecap="round" d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8" rx="1"/></svg>; }

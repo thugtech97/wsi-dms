@@ -2,11 +2,11 @@ import { useState } from 'react';
 import { Head, useForm } from '@inertiajs/react';
 import DmsLayout from '@/Layouts/DmsLayout';
 
-export default function DocumentTypesIndex({ documentTypes }) {
+export default function DocumentTypesIndex({ documentTypes, folders }) {
     const [editing, setEditing] = useState(null);
 
-    const createForm = useForm({ name: '' });
-    const editForm   = useForm({ name: '' });
+    const createForm = useForm({ name: '', folder_id: '' });
+    const editForm   = useForm({ name: '', folder_id: '' });
     const deleteForm = useForm({});
 
     function handleCreate(e) {
@@ -18,7 +18,7 @@ export default function DocumentTypesIndex({ documentTypes }) {
 
     function startEdit(type) {
         setEditing(type.id);
-        editForm.setData('name', type.name);
+        editForm.setData({ name: type.name, folder_id: type.folder_id ? String(type.folder_id) : '' });
     }
 
     function handleEdit(e, id) {
@@ -41,22 +41,38 @@ export default function DocumentTypesIndex({ documentTypes }) {
 
                 {/* Create */}
                 <Card title="Add Document Type">
-                    <form onSubmit={handleCreate} className="flex gap-3 items-end">
-                        <div className="flex-1">
-                            <label style={labelSt}>Type Name</label>
-                            <input
-                                type="text"
-                                value={createForm.data.name}
-                                onChange={e => createForm.setData('name', e.target.value)}
-                                placeholder="e.g. Memorandum"
-                                style={inputSt}
-                                required
-                            />
-                            {createForm.errors.name && <Err>{createForm.errors.name}</Err>}
+                    <form onSubmit={handleCreate}>
+                        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                            <div style={{ flex: 1, minWidth: 180 }}>
+                                <label style={labelSt}>Type Name</label>
+                                <input
+                                    type="text"
+                                    value={createForm.data.name}
+                                    onChange={e => createForm.setData('name', e.target.value)}
+                                    placeholder="e.g. Memorandum"
+                                    style={inputSt}
+                                    required
+                                />
+                                {createForm.errors.name && <Err>{createForm.errors.name}</Err>}
+                            </div>
+                            <div style={{ minWidth: 180 }}>
+                                <label style={labelSt}>Folder (optional)</label>
+                                <select
+                                    value={createForm.data.folder_id}
+                                    onChange={e => createForm.setData('folder_id', e.target.value)}
+                                    style={inputSt}
+                                >
+                                    <option value="">No folder</option>
+                                    {folders.map(f => (
+                                        <option key={f.id} value={String(f.id)}>{f.name}</option>
+                                    ))}
+                                </select>
+                                {createForm.errors.folder_id && <Err>{createForm.errors.folder_id}</Err>}
+                            </div>
+                            <IndigoBtn type="submit" disabled={createForm.processing}>
+                                {createForm.processing ? 'Adding...' : 'Add Type'}
+                            </IndigoBtn>
                         </div>
-                        <IndigoBtn type="submit" disabled={createForm.processing}>
-                            {createForm.processing ? 'Adding...' : 'Add Type'}
-                        </IndigoBtn>
                     </form>
                 </Card>
 
@@ -68,7 +84,7 @@ export default function DocumentTypesIndex({ documentTypes }) {
                         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                             <thead>
                                 <tr>
-                                    {['Name', 'Documents', 'Actions'].map(h => (
+                                    {['Name', 'Folder', 'Documents', 'Actions'].map(h => (
                                         <th key={h} style={thSt}>{h}</th>
                                     ))}
                                 </tr>
@@ -80,13 +96,23 @@ export default function DocumentTypesIndex({ documentTypes }) {
                                         onMouseLeave={e => e.currentTarget.style.background = ''}>
                                         <td style={tdSt}>
                                             {editing === type.id ? (
-                                                <form onSubmit={e => handleEdit(e, type.id)} className="flex gap-2 items-center">
+                                                <form onSubmit={e => handleEdit(e, type.id)} style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                                                     <input
                                                         autoFocus
                                                         value={editForm.data.name}
                                                         onChange={e => editForm.setData('name', e.target.value)}
-                                                        style={{ ...inputSt, margin: 0 }}
+                                                        style={{ ...inputSt, margin: 0, minWidth: 140 }}
                                                     />
+                                                    <select
+                                                        value={editForm.data.folder_id}
+                                                        onChange={e => editForm.setData('folder_id', e.target.value)}
+                                                        style={{ ...inputSt, margin: 0, minWidth: 140 }}
+                                                    >
+                                                        <option value="">No folder</option>
+                                                        {folders.map(f => (
+                                                            <option key={f.id} value={String(f.id)}>{f.name}</option>
+                                                        ))}
+                                                    </select>
                                                     <IndigoBtn type="submit" small disabled={editForm.processing}>Save</IndigoBtn>
                                                     <GhostBtn type="button" onClick={() => setEditing(null)}>Cancel</GhostBtn>
                                                 </form>
@@ -95,11 +121,20 @@ export default function DocumentTypesIndex({ documentTypes }) {
                                             )}
                                         </td>
                                         <td style={tdSt}>
+                                            {type.folder_name ? (
+                                                <span style={{ fontSize: '0.78rem', background: '#eef2ff', color: '#4f46e5', border: '1px solid #c7d2fe', borderRadius: 4, padding: '0.15rem 0.5rem', fontWeight: 500 }}>
+                                                    {type.folder_name}
+                                                </span>
+                                            ) : (
+                                                <span style={{ fontSize: '0.78rem', color: '#cbd5e1' }}>—</span>
+                                            )}
+                                        </td>
+                                        <td style={tdSt}>
                                             <span style={{ fontSize: '0.8rem', color: '#64748b' }}>{type.documents_count ?? 0} docs</span>
                                         </td>
                                         <td style={tdSt}>
                                             {editing !== type.id && (
-                                                <div className="flex gap-2">
+                                                <div style={{ display: 'flex', gap: 8 }}>
                                                     <GhostBtn onClick={() => startEdit(type)}>Edit</GhostBtn>
                                                     <DangerBtn onClick={() => handleDelete(type.id)}>Delete</DangerBtn>
                                                 </div>
