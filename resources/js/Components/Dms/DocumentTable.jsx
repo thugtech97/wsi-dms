@@ -1,12 +1,18 @@
 import { useState, useEffect, useCallback } from 'react';
 import { router, useForm } from '@inertiajs/react';
 import Badge from './Badge';
+import DynamicFormFields, {
+    formDataFromDocument,
+    documentFieldValue,
+    formatFieldValue,
+    fieldIcon,
+} from './DynamicFormFields';
 import { useResponsive } from '@/hooks/useResponsive';
 
 const TH = { fontWeight: 600, textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.5px', color: '#64748b', padding: '0.85rem 1.25rem', borderBottom: '2px solid #f1f5f9', background: '#f8fafc' };
 const TD = { padding: '1rem 1.25rem', borderBottom: '1px solid #f1f5f9', fontSize: '0.85rem', color: '#334155' };
 
-export default function DocumentTable({ documents, documentTypes = [], users = [], roles = [] }) {
+export default function DocumentTable({ documents, documentTypes = [], users = [], roles = [], formFields = [] }) {
     const [selected, setSelected] = useState(null);
     const { isMobile, isTablet } = useResponsive();
 
@@ -58,6 +64,7 @@ export default function DocumentTable({ documents, documentTypes = [], users = [
                     documentTypes={documentTypes}
                     users={users}
                     roles={roles}
+                    formFields={formFields}
                     onClose={() => setSelected(null)}
                 />
             )}
@@ -121,13 +128,19 @@ function DocumentRow({ doc, onView, isMobile }) {
 }
 
 // ── Modal ─────────────────────────────────────────────────────────────────────
-function DocumentViewModal({ doc, documentTypes, users, roles, onClose }) {
+function DocumentViewModal({ doc, documentTypes, users, roles, formFields = [], onClose }) {
     const isQR = doc.codeType === 'QR';
     const [activeTab,     setActiveTab]     = useState('details');
     const [confirmDelete, setConfirmDelete] = useState(false);
     const [deleting, setDeleting]           = useState(false);
     const [editing, setEditing]             = useState(false);
     const { isMobile }                      = useResponsive();
+
+    const sources = { document_types: documentTypes, users, roles };
+
+    // Everything on the form that the fixed cards above don't already cover.
+    const SHOWN_ABOVE  = ['label', 'document_type_id', 'department'];
+    const extraFields  = formFields.filter(f => f.is_active && !SHOWN_ABOVE.includes(f.key));
 
     const handleKey = useCallback(e => {
         if (e.key === 'Escape') { setConfirmDelete(false); onClose(); }
@@ -283,6 +296,22 @@ function DocumentViewModal({ doc, documentTypes, users, roles, onClose }) {
                                 <DetailCard label="Added By" icon="👤"><span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1e293b' }}>{doc.owner}</span></DetailCard>
                             </div>
 
+                            {/* Admin-configured fields from Settings → Document Form */}
+                            {extraFields.length > 0 && (
+                                <div>
+                                    <div style={{ fontSize: '0.68rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 8 }}>
+                                        Additional Information
+                                    </div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '0.75rem' }}>
+                                        {extraFields.map(field => (
+                                            <DetailCard key={field.key} label={field.label} icon={fieldIcon(field.type)}>
+                                                <CustomFieldValue field={field} doc={doc} sources={sources} />
+                                            </DetailCard>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
                             {!isMobile && <div style={{ flex: 1 }} />}
 
                             {confirmDelete ? (
@@ -362,6 +391,7 @@ function DocumentViewModal({ doc, documentTypes, users, roles, onClose }) {
                     documentTypes={documentTypes}
                     users={users}
                     roles={roles}
+                    formFields={formFields}
                     onClose={() => setEditing(false)}
                     onSuccess={onClose}
                 />
@@ -370,30 +400,16 @@ function DocumentViewModal({ doc, documentTypes, users, roles, onClose }) {
     );
 }
 
-function DocumentEditModal({ doc, documentTypes, users, roles, onClose, onSuccess }) {
-    const { data, setData, put, processing, errors } = useForm({
-        label: doc.label ?? '',
-        document_type_id: doc.document_type_id ?? '',
-        department: doc.department === 'â€”' ? '' : (doc.department ?? ''),
-        link_document_url: doc.link_document_url ?? '',
-        allowed_users: doc.allowed_users ?? [],
-        allowed_roles: doc.allowed_roles ?? [],
-    });
+function DocumentEditModal({ doc, documentTypes, users, roles, formFields = [], onClose, onSuccess }) {
+    // Same admin-managed schema as the Add New Document form.
+    const { data, setData, put, processing, errors } = useForm(formDataFromDocument(formFields, doc));
 
-    const toggleSelection = (field, itemId) => {
-        const selected = data[field];
-        setData(field, selected.some(id => String(id) === String(itemId))
-            ? selected.filter(id => String(id) !== String(itemId))
-            : [...selected, itemId]);
-    };
+    const sources = { document_types: documentTypes, users, roles };
 
     function submit(e) {
         e.preventDefault();
         put(route('documents.update', doc.id), { onSuccess });
     }
-
-    const inputStyle = { width: '100%', padding: '0.55rem 0.7rem', fontSize: '0.85rem', border: '1px solid #cbd5e1', borderRadius: 7, color: '#1e293b', outline: 'none', boxSizing: 'border-box', background: '#fff' };
-    const listStyle = { border: '1px solid #cbd5e1', borderRadius: 7, padding: '0.55rem', maxHeight: 120, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 7 };
 
     return (
         <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 210, background: 'rgba(15,23,42,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', backdropFilter: 'blur(3px)' }}>
@@ -406,21 +422,23 @@ function DocumentEditModal({ doc, documentTypes, users, roles, onClose, onSucces
                     <button onClick={onClose} aria-label="Close edit modal" style={{ width: 30, height: 30, borderRadius: 7, background: '#f8fafc', border: '1px solid #e2e8f0', cursor: 'pointer', color: '#64748b' }}><XIcon /></button>
                 </div>
                 <form onSubmit={submit} style={{ padding: '1.25rem', overflowY: 'auto' }}>
-                    <EditField label="Label" error={errors.label}><input required value={data.label} onChange={e => setData('label', e.target.value)} style={inputStyle} onClick={e => e.target.select()} /></EditField>
-                    <EditField label="Document Class" error={errors.document_type_id}>
-                        <select required value={data.document_type_id} onChange={e => setData('document_type_id', e.target.value)} style={inputStyle}>
-                            <option value="" disabled>Choose classification…</option>
-                            {documentTypes.map(type => <option key={type.id} value={type.id}>{type.name}</option>)}
-                        </select>
+                    <DynamicFormFields
+                        fields={formFields}
+                        data={data}
+                        setData={setData}
+                        errors={errors}
+                        sources={sources}
+                    />
+
+                    {/* Tracking code is fixed at creation time and shown read-only here. */}
+                    <EditField label="Tracking Code">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0.5rem 0.7rem', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 7 }}>
+                            <span style={{ fontSize: '0.95rem' }}>{doc.codeType === 'QR' ? '⬛' : '▐▌'}</span>
+                            <span style={{ fontFamily: 'monospace', fontSize: '0.82rem', fontWeight: 700, color: '#4f46e5' }}>{doc.codeId}</span>
+                            <span style={{ fontSize: '0.75rem', color: '#94a3b8', marginLeft: 'auto' }}>Cannot be changed</span>
+                        </div>
                     </EditField>
-                    {/* <EditField label="Department" error={errors.department}><input value={data.department} onChange={e => setData('department', e.target.value)} style={inputStyle} /></EditField> */}
-                    <EditField label="Link / Document URL" error={errors.link_document_url}><input value={data.link_document_url} onChange={e => setData('link_document_url', e.target.value)} style={inputStyle} onClick={e => e.target.select()} /></EditField>
-                    {/* <EditField label="Assign to Specific Users" error={errors.allowed_users}>
-                        <div style={listStyle}>{users.length ? users.map(user => <label key={user.id} style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: '0.84rem', color: '#334155', cursor: 'pointer' }}><input type="checkbox" checked={data.allowed_users.some(id => String(id) === String(user.id))} onChange={() => toggleSelection('allowed_users', user.id)} style={{ accentColor: '#6366f1' }} />{user.name}</label>) : <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>No users available</span>}</div>
-                    </EditField>
-                    <EditField label="Assign to System Roles" error={errors.allowed_roles}>
-                        <div style={listStyle}>{roles.length ? roles.map(role => <label key={role.id} style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: '0.84rem', color: '#334155', cursor: 'pointer' }}><input type="checkbox" checked={data.allowed_roles.some(id => String(id) === String(role.id))} onChange={() => toggleSelection('allowed_roles', role.id)} style={{ accentColor: '#6366f1' }} />{role.name}</label>) : <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>No roles available</span>}</div>
-                    </EditField> */}
+
                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: '1.25rem' }}>
                         <button type="button" onClick={onClose} disabled={processing} style={{ padding: '0.58rem 0.95rem', background: '#fff', color: '#475569', fontWeight: 600, fontSize: '0.82rem', borderRadius: 7, border: '1px solid #cbd5e1', cursor: 'pointer' }}>Cancel</button>
                         <button type="submit" disabled={processing} style={{ padding: '0.58rem 0.95rem', background: processing ? '#a5b4fc' : '#6366f1', color: '#fff', fontWeight: 700, fontSize: '0.82rem', borderRadius: 7, border: 'none', cursor: processing ? 'not-allowed' : 'pointer' }}>{processing ? 'Updating…' : 'Update Document'}</button>
@@ -433,6 +451,32 @@ function DocumentEditModal({ doc, documentTypes, users, roles, onClose, onSucces
 
 function EditField({ label, error, children }) {
     return <div style={{ marginBottom: '1rem' }}><label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: '#475569', marginBottom: 5 }}>{label}</label>{children}{error && <p style={{ color: '#ef4444', fontSize: '0.75rem', margin: '4px 0 0' }}>{error}</p>}</div>;
+}
+
+function CustomFieldValue({ field, doc, sources }) {
+    const text  = formatFieldValue(field, documentFieldValue(field, doc), sources);
+    const blank = text === '—';
+    const style = { fontSize: '0.85rem', fontWeight: 600, color: blank ? '#cbd5e1' : '#1e293b', wordBreak: 'break-word' };
+
+    if (field.type === 'url' && !blank) {
+        return (
+            <a href={text} target="_blank" rel="noopener noreferrer"
+                style={{ ...style, color: '#4f46e5', textDecoration: 'underline' }}>
+                {text}
+            </a>
+        );
+    }
+
+    if (field.type === 'checkbox') {
+        const on = text === 'Yes';
+        return (
+            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: on ? '#15803d' : '#94a3b8', background: on ? '#f0fdf4' : '#f8fafc', border: `1px solid ${on ? '#bbf7d0' : '#e2e8f0'}`, borderRadius: 999, padding: '2px 9px' }}>
+                {text}
+            </span>
+        );
+    }
+
+    return <span style={style}>{text}</span>;
 }
 
 function DetailCard({ label, icon, children }) {

@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { Head, router, usePage, Link } from '@inertiajs/react';
 import DmsLayout from '@/Layouts/DmsLayout';
+import DocumentFormBuilder from '@/Components/Dms/DocumentFormBuilder';
 
-export default function SettingsIndex({ settings, systemInfo }) {
+export default function SettingsIndex({ settings, systemInfo, formFields = [], fieldTypes = [], choiceTypes = [] }) {
     const { flash } = usePage().props;
 
     const s = (key, def = '') => settings[key] ?? def;
@@ -34,6 +35,8 @@ export default function SettingsIndex({ settings, systemInfo }) {
         router.post(route('settings.update'), form, {
             onFinish: () => setSaving(false),
             preserveScroll: true,
+            preserveState: true,
+            only: ['settings', 'flash'],
         });
     }
 
@@ -75,7 +78,7 @@ export default function SettingsIndex({ settings, systemInfo }) {
 
                 {/* Tab bar */}
                 <div style={{ display: 'flex', borderBottom: '2px solid #e2e8f0', marginBottom: '1.5rem', gap: 0 }}>
-                    {[['general','General Settings'], ['code','Code Format']].map(([key, label]) => (
+                    {[['general','General Settings'], ['form','Document Form'], ['code','Code Format']].map(([key, label]) => (
                         <button key={key} type="button" onClick={() => setActiveTab(key)} style={{
                             padding: '0.55rem 1.25rem', fontSize: '0.83rem', fontWeight: 600, border: 'none',
                             borderBottom: activeTab === key ? '2px solid #2563eb' : '2px solid transparent',
@@ -269,6 +272,19 @@ export default function SettingsIndex({ settings, systemInfo }) {
                         </div>
                     </div>
                 </form>
+                </>}
+
+                {activeTab === 'form' && <>
+                    {flash?.success && (
+                        <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '0.7rem 1rem', marginBottom: '1.25rem', fontSize: '0.83rem', color: '#16a34a', fontWeight: 500 }}>
+                            {flash.success}
+                        </div>
+                    )}
+                    <DocumentFormBuilder
+                        formFields={formFields}
+                        fieldTypes={fieldTypes}
+                        choiceTypes={choiceTypes}
+                    />
                 </>}
 
                 {activeTab === 'code' && <CodeCustomizer />}

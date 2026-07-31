@@ -1,29 +1,15 @@
 import { useForm } from '@inertiajs/react';
+import DynamicFormFields, { emptyFormData, labelStyle } from './DynamicFormFields';
 
-const inputStyle = { width: '100%', padding: '0.5rem 0.75rem', fontSize: '0.85rem', border: '1px solid #cbd5e1', borderRadius: 6, color: '#1e293b', outline: 'none', boxSizing: 'border-box', background: '#fff' };
-const labelStyle = { fontWeight: 500, fontSize: '0.8rem', color: '#64748b', display: 'block', marginBottom: '0.35rem' };
-const listContainerStyle = {
-    border: '1px solid #cbd5e1',
-    borderRadius: 6,
-    padding: '0.50rem',
-    maxHeight: '120px',
-    overflowY: 'auto',
-    background: '#fff',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '0.4rem'
-};
-
-export default function UploadPanel({ documentTypes, users = [], roles = [], onSuccess }) {
+export default function UploadPanel({ documentTypes, users = [], roles = [], formFields = [], onSuccess }) {
+    // Field list is admin-managed (Settings → Document Form). code_type is not —
+    // the tracking code is a fixed part of every document.
     const { data, setData, post, processing, errors, reset } = useForm({
-        label:            '',
-        document_type_id: '',
-        department:       '',
-        code_type:        'QR',
-        link_document_url: '',
-        allowed_users:     [],
-        allowed_roles:     [],
+        ...emptyFormData(formFields),
+        code_type: 'QR',
     });
+
+    const sources = { document_types: documentTypes, users, roles };
 
     function handleSubmit(e) {
         e.preventDefault();
@@ -31,15 +17,6 @@ export default function UploadPanel({ documentTypes, users = [], roles = [], onS
             onSuccess: () => { reset(); onSuccess?.(); },
         });
     }
-
-    const handleToggleSelection = (field, itemId) => {
-        const currentSelection = data[field];
-        if (currentSelection.includes(itemId)) {
-            setData(field, currentSelection.filter(id => id !== itemId));
-        } else {
-            setData(field, [...currentSelection, itemId]);
-        }
-    };
 
     return (
         <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.05)', position: 'sticky', top: 86 }}>
@@ -50,116 +27,22 @@ export default function UploadPanel({ documentTypes, users = [], roles = [], onS
             <div style={{ padding: '1.25rem' }}>
                 <form onSubmit={handleSubmit}>
 
-                    {/* Label */}
-                    <div style={{ marginBottom: '1rem' }}>
-                        <label style={labelStyle}>Label</label>
-                        <input
-                            type="text"
-                            required
-                            value={data.label}
-                            onChange={e => setData('label', e.target.value)}
-                            placeholder="e.g. Contract Agreement 2026"
-                            style={inputStyle}
-                        />
-                        {errors.label && <Err>{errors.label}</Err>}
-                    </div>
+                    {/* Admin-configurable fields */}
+                    <DynamicFormFields
+                        fields={formFields}
+                        data={data}
+                        setData={setData}
+                        errors={errors}
+                        sources={sources}
+                    />
 
-                    {/* Document Class */}
-                    <div style={{ marginBottom: '1rem' }}>
-                        <label style={labelStyle}>Document Class</label>
-                        <select
-                            required
-                            value={data.document_type_id}
-                            onChange={e => setData('document_type_id', e.target.value)}
-                            style={inputStyle}
-                        >
-                            <option value="" disabled>Choose classification…</option>
-                            {documentTypes.map(t => (
-                                <option key={t.id} value={t.id}>{t.name}</option>
-                            ))}
-                        </select>
-                        {errors.document_type_id && <Err>{errors.document_type_id}</Err>}
-                    </div>
+                    {formFields.length === 0 && (
+                        <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginBottom: '1rem' }}>
+                            No form fields are enabled. An admin can add them in Settings → Document Form.
+                        </p>
+                    )}
 
-                    {/* Department */}
-                    {/* <div style={{ marginBottom: '1rem' }}>
-                        <label style={labelStyle}>Department</label>
-                        <input
-                            type="text"
-                            value={data.department}
-                            onChange={e => setData('department', e.target.value)}
-                            placeholder="e.g. Human Resources"
-                            style={inputStyle}
-                        />
-                        {errors.department && <Err>{errors.department}</Err>}
-                    </div> */}
-
-                    {/* Link / Document URL */}
-                    <div style={{ marginBottom: '1rem' }}>
-                        <label style={labelStyle}>Link / Document URL</label>
-                        <input
-                            type="text"
-                            value={data.link_document_url}
-                            onChange={e => setData('link_document_url', e.target.value)}
-                            placeholder="e.g. https://example.com/document"
-                            style={inputStyle}
-                        />
-                        {errors.link_document_url && <Err>{errors.link_document_url}</Err>}
-                    </div>
-                    
-                    {/* Allowed Users Multi-Select List */}
-                    {/* <div style={{ marginBottom: '1rem' }}>
-                        <label style={labelStyle}>Assign to Specific Users</label>
-                        <div style={listContainerStyle}>
-                            {users.length === 0 ? (
-                                <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>No users available</span>
-                            ) : (
-                                users.map(user => {
-                                    const isChecked = data.allowed_users.includes(user.id);
-                                    return (
-                                        <label key={user.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: '#1e293b', cursor: 'pointer', textTransform: 'capitalize' }}>
-                                            <input
-                                                type="checkbox"
-                                                checked={isChecked}
-                                                onChange={() => handleToggleSelection('allowed_users', user.id)}
-                                                style={{ cursor: 'pointer', accentColor: '#6366f1' }}
-                                            />
-                                            {user.name}
-                                        </label>
-                                    );
-                                })
-                            )}
-                        </div>
-                        {errors.allowed_users && <Err>{errors.allowed_users}</Err>}
-                    </div> */}
-
-                    {/* Allowed Roles Multi-Select List */}
-                    {/* <div style={{ marginBottom: '1rem' }}>
-                        <label style={labelStyle}>Assign to System Roles</label>
-                        <div style={listContainerStyle}>
-                            {roles.length === 0 ? (
-                                <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>No roles available</span>
-                            ) : (
-                                roles.map(role => {
-                                    const isChecked = data.allowed_roles.includes(role.id);
-                                    return (
-                                        <label key={role.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: '#1e293b', cursor: 'pointer', textTransform: 'capitalize' }}>
-                                            <input
-                                                type="checkbox"
-                                                checked={isChecked}
-                                                onChange={() => handleToggleSelection('allowed_roles', role.id)}
-                                                style={{ cursor: 'pointer', accentColor: '#6366f1' }}
-                                            />
-                                            {role.name}
-                                        </label>
-                                    );
-                                })
-                            )}
-                        </div>
-                        {errors.allowed_roles && <Err>{errors.allowed_roles}</Err>}
-                    </div> */}
-
-                    {/* Code Type */}
+                    {/* ── Tracking Code — fixed, not configurable ── */}
                     <div style={{ marginBottom: '1.25rem' }}>
                         <label style={labelStyle}>Tracking Code</label>
                         <div style={{ display: 'flex', gap: '1.25rem' }}>
@@ -177,6 +60,7 @@ export default function UploadPanel({ documentTypes, users = [], roles = [], onS
                                 </label>
                             ))}
                         </div>
+                        {errors.code_type && <p style={{ color: '#ef4444', fontSize: '0.75rem', marginTop: 4 }}>{errors.code_type}</p>}
                     </div>
 
                     {/* Submit */}
@@ -194,9 +78,6 @@ export default function UploadPanel({ documentTypes, users = [], roles = [], onS
     );
 }
 
-function Err({ children }) {
-    return <p style={{ color: '#ef4444', fontSize: '0.75rem', marginTop: 4 }}>{children}</p>;
-}
 function DocIcon() {
     return <svg width="15" height="15" fill="none" stroke="#94a3b8" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline strokeLinecap="round" points="14 2 14 8 20 8"/><line strokeLinecap="round" x1="16" y1="13" x2="8" y2="13"/><line strokeLinecap="round" x1="16" y1="17" x2="8" y2="17"/></svg>;
 }

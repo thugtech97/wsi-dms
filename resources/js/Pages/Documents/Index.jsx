@@ -6,7 +6,7 @@ import DocumentTable from '@/Components/Dms/DocumentTable';
 import UploadPanel from '@/Components/Dms/UploadPanel';
 import { useResponsive } from '@/hooks/useResponsive';
 
-export default function DocumentsIndex({ documents, documentTypes, users = [], roles = [], filters: serverFilters, openDocId }) {
+export default function DocumentsIndex({ documents, documentTypes, users = [], roles = [], formFields = [], filters: serverFilters, openDocId }) {
     const { isMobile, isTablet } = useResponsive();
     const [filters, setFilters]   = useState({
         label:      serverFilters?.label      ?? '',
@@ -125,17 +125,18 @@ export default function DocumentsIndex({ documents, documentTypes, users = [], r
                         onAddNew={() => setShowUploadModal(true)}
                         documentTypes={documentTypes} 
                     />
-                    <DocumentTable documents={filtered} documentTypes={documentTypes} users={users} roles={roles} />
+                    <DocumentTable documents={filtered} documentTypes={documentTypes} users={users} roles={roles} formFields={formFields} />
                 </div>
             </div>
 
             {/* Global Document Upload Modal */}
             {showUploadModal && (
-                <UploadModal 
-                    documentTypes={documentTypes} 
-                    users={users} 
-                    roles={roles} 
-                    onClose={() => setShowUploadModal(false)} 
+                <UploadModal
+                    documentTypes={documentTypes}
+                    users={users}
+                    roles={roles}
+                    formFields={formFields}
+                    onClose={() => setShowUploadModal(false)}
                 />
             )}
 
@@ -147,7 +148,7 @@ export default function DocumentsIndex({ documents, documentTypes, users = [], r
 }
 
 // ── Upload Modal Wrapper ──────────────────────────────────────────────────────
-function UploadModal({ documentTypes, users, roles, onClose }) {
+function UploadModal({ documentTypes, users, roles, formFields, onClose }) {
     const handleKey = useCallback(e => { if (e.key === 'Escape') onClose(); }, [onClose]);
     
     useEffect(() => {
@@ -174,10 +175,11 @@ function UploadModal({ documentTypes, users, roles, onClose }) {
 
                 {/* Form Injection Area */}
                 <div style={{ padding: '1.25rem', maxHeight: 'calc(100vh - 160px)', overflowY: 'auto' }}>
-                    <UploadPanel 
-                        documentTypes={documentTypes} 
-                        users={users} 
+                    <UploadPanel
+                        documentTypes={documentTypes}
+                        users={users}
                         roles={roles}
+                        formFields={formFields}
                         onSuccess={onClose}
                     />
                 </div>

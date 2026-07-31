@@ -23,7 +23,12 @@ class Document extends Model implements Auditable
         'link_document_url',
         'allowed_users',
         'allowed_roles',
+        'custom_fields',
         'scan_count',
+    ];
+
+    protected $casts = [
+        'custom_fields' => 'array',
     ];
 
     // Only audit what's meaningful
@@ -37,6 +42,7 @@ class Document extends Model implements Auditable
         'link_document_url',
         'allowed_users',
         'allowed_roles',
+        'custom_fields',
         'scan_count',
     ];
 

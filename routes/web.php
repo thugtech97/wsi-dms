@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuditTrailController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\DocumentFormFieldController;
 use App\Http\Controllers\DocumentTypeController;
 use App\Http\Controllers\FolderController;
 use App\Http\Controllers\NotificationController;
@@ -60,6 +61,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Settings (admin only)
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
     Route::post('/settings', [SettingsController::class, 'update'])->name('settings.update');
+
+    // Document form builder (admin only)
+    Route::post('/settings/document-fields', [DocumentFormFieldController::class, 'store'])->name('document-fields.store');
+    Route::post('/settings/document-fields/reorder', [DocumentFormFieldController::class, 'reorder'])->name('document-fields.reorder');
+    Route::put('/settings/document-fields/{documentFormField}', [DocumentFormFieldController::class, 'update'])->name('document-fields.update');
+    Route::post('/settings/document-fields/{documentFormField}/toggle', [DocumentFormFieldController::class, 'toggle'])->name('document-fields.toggle');
+    Route::delete('/settings/document-fields/{documentFormField}', [DocumentFormFieldController::class, 'destroy'])->name('document-fields.destroy');
 
     // Notifications
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
