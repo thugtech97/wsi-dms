@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { Head, useForm } from '@inertiajs/react';
 import DmsLayout from '@/Layouts/DmsLayout';
+import { useConfirm } from '@/Components/Dms/ConfirmDialog';
 
 export default function DocumentTypesIndex({ documentTypes, folders }) {
     const [editing, setEditing] = useState(null);
+    const { confirm, dialog } = useConfirm();
 
     const createForm = useForm({ name: '', folder_id: '' });
     const editForm   = useForm({ name: '', folder_id: '' });
@@ -28,8 +30,15 @@ export default function DocumentTypesIndex({ documentTypes, folders }) {
         });
     }
 
-    function handleDelete(id) {
-        if (!confirm('Delete this document type? Documents using it will also be removed.')) return;
+    async function handleDelete(id) {
+        const ok = await confirm({
+            title: 'Delete this document type?',
+            message: 'Documents using it will also be removed.',
+            confirmLabel: 'Delete type',
+            tone: 'danger',
+        });
+        if (!ok) return;
+
         deleteForm.delete(route('document-types.destroy', id));
     }
 
@@ -147,6 +156,7 @@ export default function DocumentTypesIndex({ documentTypes, folders }) {
                     )}
                 </Card>
             </div>
+            {dialog}
         </DmsLayout>
     );
 }

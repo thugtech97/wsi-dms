@@ -8,15 +8,19 @@ use App\Models\DocumentType;
 use App\Models\User;
 use Spatie\Permission\Models\Role;
 use App\Notifications\DocumentUploadedNotification;
+use App\Services\DocumentCodeGenerator;
+use App\Support\DocumentSchema;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
-use Picqer\Barcode\BarcodeGeneratorSVG;
-use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 
 class DocumentController extends Controller
 {
+    public function __construct(private DocumentCodeGenerator $codes)
+    {
+    }
+
     public function index(Request $request)
     {
         $user    = auth()->user();
@@ -90,36 +94,24 @@ class DocumentController extends Controller
 
     public function store(Request $request)
     {
-        $fields = DocumentFormField::active()->ordered()->get();
+        $fields = DocumentSchema::fields();
 
         // Tracking code is never part of the customisable schema — it is always required.
         $request->validate(
-            $this->schemaRules($fields) + ['code_type' => 'required|in:QR,Barcode'],
+            DocumentSchema::rules($fields) + ['code_type' => 'required|in:QR,Barcode'],
             [],
-            $this->schemaAttributes($fields),
+            DocumentSchema::attributes($fields),
         );
 
-        $randNum = rand(10000, 99999);
+        $code = $this->codes->generate($request->code_type);
 
-        if ($request->code_type === 'QR') {
-            $codeId   = '#QR-' . $randNum;
-            $svg      = QrCode::size(150)->generate("DOC-{$randNum}");
-            $codePath = "codes/qr-{$randNum}.svg";
-            Storage::disk('public')->put($codePath, $svg);
-        } else {
-            $codeId    = '#BC-' . $randNum;
-            $generator = new BarcodeGeneratorSVG();
-            $svg       = $generator->getBarcode("BC-{$randNum}", BarcodeGeneratorSVG::TYPE_CODE_128, 2, 50);
-            $codePath  = "codes/bc-{$randNum}.svg";
-            Storage::disk('public')->put($codePath, $svg);
-        }
-
-        $document = Document::create($this->schemaPayload($request, $fields) + [
+        $document = Document::create(DocumentSchema::payload($fields, $request->all()) + [
             'file_path'        => null,
             'owner_id'         => auth()->id(),
             'code_type'        => $request->code_type,
-            'code_id'          => $codeId,
-            'code_image_path'  => $codePath,
+            'code_id'          => $code['code_id'],
+            'code_value'       => $code['code_value'],
+            'code_image_path'  => $code['code_image_path'],
             'storage_location' => null,
         ]);
 
@@ -130,59 +122,13 @@ class DocumentController extends Controller
 
     public function update(Request $request, Document $document)
     {
-        $fields = DocumentFormField::active()->ordered()->get();
+        $fields = DocumentSchema::fields();
 
-        $request->validate($this->schemaRules($fields), [], $this->schemaAttributes($fields));
+        $request->validate(DocumentSchema::rules($fields), [], DocumentSchema::attributes($fields));
 
-        $document->update($this->schemaPayload($request, $fields, $document));
+        $document->update(DocumentSchema::payload($fields, $request->all(), $document));
 
         return redirect()->route('documents.index');
-    }
-
-    /**
-     * Validation rules built from the admin-managed form schema.
-     */
-    private function schemaRules($fields): array
-    {
-        return $fields->mapWithKeys(fn (DocumentFormField $f) => [$f->key => $f->validationRules()])->all();
-    }
-
-    /**
-     * Use the admin's labels in validation messages instead of raw keys.
-     */
-    private function schemaAttributes($fields): array
-    {
-        return $fields->mapWithKeys(fn (DocumentFormField $f) => [$f->key => strtolower($f->label)])->all();
-    }
-
-    /**
-     * Split submitted values into real columns and the custom_fields JSON bag.
-     */
-    private function schemaPayload(Request $request, $fields, ?Document $document = null): array
-    {
-        $attributes = [];
-        $custom     = $document?->custom_fields ?? [];
-
-        foreach ($fields as $field) {
-            $value = $field->castForStorage($request->input($field->key));
-
-            if (! $field->column_name) {
-                $custom[$field->key] = $value;
-                continue;
-            }
-
-            // allowed_users / allowed_roles are string columns holding JSON.
-            if ($field->isMulti() && in_array($field->column_name, ['allowed_users', 'allowed_roles'], true)) {
-                $attributes[$field->column_name] = $value ? json_encode($value) : null;
-                continue;
-            }
-
-            $attributes[$field->column_name] = $field->isMulti() ? json_encode($value) : $value;
-        }
-
-        $attributes['custom_fields'] = $custom ?: null;
-
-        return $attributes;
     }
 
     public function recordScan(Document $document)

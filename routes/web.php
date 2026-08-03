@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ApiClientController;
 use App\Http\Controllers\AuditTrailController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentController;
@@ -68,6 +69,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('/settings/document-fields/{documentFormField}', [DocumentFormFieldController::class, 'update'])->name('document-fields.update');
     Route::post('/settings/document-fields/{documentFormField}/toggle', [DocumentFormFieldController::class, 'toggle'])->name('document-fields.toggle');
     Route::delete('/settings/document-fields/{documentFormField}', [DocumentFormFieldController::class, 'destroy'])->name('document-fields.destroy');
+
+    // API applications (admin only)
+    Route::get('/api-clients', [ApiClientController::class, 'index'])->name('api-clients.index');
+    Route::post('/api-clients', [ApiClientController::class, 'store'])->name('api-clients.store');
+    Route::put('/api-clients/{apiClient}', [ApiClientController::class, 'update'])->name('api-clients.update');
+    Route::post('/api-clients/{apiClient}/regenerate', [ApiClientController::class, 'regenerateToken'])->name('api-clients.regenerate');
+    Route::post('/api-clients/{apiClient}/toggle', [ApiClientController::class, 'toggle'])->name('api-clients.toggle');
+    Route::delete('/api-clients/{apiClient}', [ApiClientController::class, 'destroy'])->name('api-clients.destroy');
 
     // Notifications
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
