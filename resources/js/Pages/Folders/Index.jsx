@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { Head, useForm } from '@inertiajs/react';
 import DmsLayout from '@/Layouts/DmsLayout';
+import { useConfirm } from '@/Components/Dms/ConfirmDialog';
 
 export default function FoldersIndex({ folders, availableRoles }) {
     const [editingFolder, setEditingFolder] = useState(null);
+    const { confirm, dialog } = useConfirm();
 
     const createForm = useForm({ name: '', roles: [] });
     const deleteForm = useForm({});
@@ -23,8 +25,15 @@ export default function FoldersIndex({ folders, availableRoles }) {
         createForm.post(route('folders.store'), { onSuccess: () => createForm.reset() });
     }
 
-    function handleDelete(id, name) {
-        if (!confirm(`Delete folder "${name}"? Document types in this folder will be unlinked.`)) return;
+    async function handleDelete(id, name) {
+        const ok = await confirm({
+            title: `Delete folder “${name}”?`,
+            message: 'Document types in this folder will be unlinked, not deleted.',
+            confirmLabel: 'Delete folder',
+            tone: 'danger',
+        });
+        if (!ok) return;
+
         deleteForm.delete(route('folders.destroy', id));
     }
 
@@ -148,6 +157,7 @@ export default function FoldersIndex({ folders, availableRoles }) {
                     onClose={() => setEditingFolder(null)}
                 />
             )}
+            {dialog}
         </DmsLayout>
     );
 }

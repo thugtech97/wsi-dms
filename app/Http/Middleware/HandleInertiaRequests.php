@@ -39,8 +39,10 @@ class HandleInertiaRequests extends Middleware
                 ) : null,
             ],
             'flash' => [
-                'success' => fn () => $request->session()->get('success'),
-                'error'   => fn () => $request->session()->get('error'),
+                'success'  => fn () => $request->session()->get('success'),
+                'error'    => fn () => $request->session()->get('error'),
+                // Plain API token, shown once right after it is issued.
+                'newToken' => fn () => $request->session()->get('newToken'),
             ],
             'unreadNotificationsCount' => fn () => $request->user()
                 ? $request->user()->unreadNotifications()->count()

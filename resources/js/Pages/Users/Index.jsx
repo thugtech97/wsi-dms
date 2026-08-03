@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { Head, useForm, usePage } from '@inertiajs/react';
 import DmsLayout from '@/Layouts/DmsLayout';
+import { useConfirm } from '@/Components/Dms/ConfirmDialog';
 
 export default function UsersIndex({ users, roles }) {
     const { auth } = usePage().props;
     const isAdmin = auth?.user?.role === 'admin';
+    const { confirm, dialog } = useConfirm();
 
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [editingUser,     setEditingUser]     = useState(null);
@@ -17,13 +19,27 @@ export default function UsersIndex({ users, roles }) {
         roleForm.post(route('roles.store'), { onSuccess: () => roleForm.reset() });
     }
 
-    function handleDeleteRole(role) {
-        if (!confirm(`Delete role "${role.name}"? Users with this role will lose it.`)) return;
+    async function handleDeleteRole(role) {
+        const ok = await confirm({
+            title: `Delete role “${role.name}”?`,
+            message: 'Users who currently have this role will lose it.',
+            confirmLabel: 'Delete role',
+            tone: 'danger',
+        });
+        if (!ok) return;
+
         deleteForm.delete(route('roles.destroy', role.id));
     }
 
-    function handleDeleteUser(user) {
-        if (!confirm(`Delete user "${user.name}"? This cannot be undone.`)) return;
+    async function handleDeleteUser(user) {
+        const ok = await confirm({
+            title: `Delete user “${user.name}”?`,
+            message: 'This cannot be undone.',
+            confirmLabel: 'Delete user',
+            tone: 'danger',
+        });
+        if (!ok) return;
+
         deleteForm.delete(route('users.destroy', user.id));
     }
 
@@ -150,6 +166,7 @@ export default function UsersIndex({ users, roles }) {
                     requirePassword={false}
                 />
             )}
+            {dialog}
         </DmsLayout>
     );
 }

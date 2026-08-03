@@ -16,8 +16,10 @@ class Document extends Model implements Auditable
         'file_path',
         'document_type_id',
         'owner_id',
+        'api_client_id',
         'code_type',
         'code_id',
+        'code_value',
         'code_image_path',
         'storage_location',
         'link_document_url',
@@ -36,6 +38,7 @@ class Document extends Model implements Auditable
         'name',
         'document_type_id',
         'owner_id',
+        'api_client_id',
         'code_type',
         'code_id',
         'storage_location',
@@ -54,5 +57,11 @@ class Document extends Model implements Auditable
     public function owner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'owner_id');
+    }
+
+    /** The external application that created this document, if any. */
+    public function apiClient(): BelongsTo
+    {
+        return $this->belongsTo(ApiClient::class);
     }
 }

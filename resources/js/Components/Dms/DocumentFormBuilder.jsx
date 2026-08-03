@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { router, useForm } from '@inertiajs/react';
 import { FieldControl, resolveOptions, fieldIcon, labelStyle } from './DynamicFormFields';
+import { useConfirm } from './ConfirmDialog';
 
 /**
  * Settings → Document Form.
@@ -23,6 +24,7 @@ const visitOptions = {
 
 export default function DocumentFormBuilder({ formFields = [], fieldTypes = [], choiceTypes = [] }) {
     const [items, setItems] = useState(formFields);
+    const { confirm, dialog } = useConfirm();
 
     const [dragIdx,     setDragIdx]     = useState(null); // existing row being moved
     const [paletteType, setPaletteType] = useState(null); // new element being dragged in
@@ -77,8 +79,15 @@ export default function DocumentFormBuilder({ formFields = [], fieldTypes = [], 
         });
     }
 
-    function remove(field) {
-        if (!confirm(`Remove "${field.label}" from the document form?\n\nExisting documents keep their saved value, but the field will no longer be shown.`)) return;
+    async function remove(field) {
+        const ok = await confirm({
+            title: `Remove “${field.label}” from the document form?`,
+            message: 'Existing documents keep their saved value, but the field will no longer be shown.',
+            confirmLabel: 'Remove field',
+            tone: 'danger',
+        });
+        if (!ok) return;
+
         router.delete(route('document-fields.destroy', field.id), visitOptions);
     }
 
@@ -290,6 +299,7 @@ export default function DocumentFormBuilder({ formFields = [], fieldTypes = [], 
                     </div>
                 </div>
             </div>
+            {dialog}
         </div>
     );
 }

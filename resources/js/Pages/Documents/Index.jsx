@@ -4,6 +4,7 @@ import DmsLayout from '@/Layouts/DmsLayout';
 import DocumentFilter from '@/Components/Dms/DocumentFilter';
 import DocumentTable from '@/Components/Dms/DocumentTable';
 import UploadPanel from '@/Components/Dms/UploadPanel';
+import { useConfirm } from '@/Components/Dms/ConfirmDialog';
 import { useResponsive } from '@/hooks/useResponsive';
 
 export default function DocumentsIndex({ documents, documentTypes, users = [], roles = [], formFields = [], filters: serverFilters, openDocId }) {
@@ -18,6 +19,7 @@ export default function DocumentsIndex({ documents, documentTypes, users = [], r
     // const [showUploadPanel, setShowUpload]  = useState(false);
     const [showUploadModal, setShowUploadModal] = useState(false);
     const [scanPopupDoc, setScanPopupDoc]   = useState(null);
+    const { notify, dialog }                = useConfirm();
 
     useEffect(() => {
         if (openDocId) {
@@ -40,7 +42,14 @@ export default function DocumentsIndex({ documents, documentTypes, users = [], r
         if (!s) return;
         const match = documents.find(doc => doc.codeId.toLowerCase().includes(s));
         setScanPopupDoc(match ?? null);
-        if (!match) alert(`No document found for "${value}"`);
+        if (!match) {
+            notify({
+                title: 'No match',
+                message: `Nothing in this list matches “${value}”.`,
+                detail: 'Check the code, or clear the filters in case the document is hidden by one.',
+                tone: 'warning',
+            });
+        }
     }
 
     const filtered = documents.filter(doc => {
@@ -143,6 +152,8 @@ export default function DocumentsIndex({ documents, documentTypes, users = [], r
             {scanPopupDoc && (
                 <ScanResultModal doc={scanPopupDoc} onClose={() => setScanPopupDoc(null)} />
             )}
+
+            {dialog}
         </DmsLayout>
     );
 }
