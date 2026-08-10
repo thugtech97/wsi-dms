@@ -1,15 +1,42 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Head, useForm, usePage, router } from '@inertiajs/react';
 import DmsLayout from '@/Layouts/DmsLayout';
 import { useConfirm } from '@/Components/Dms/ConfirmDialog';
+import ApiClientsGuide from '@/Components/Dms/ApiClientsGuide';
+import GuidedTour from '@/Components/Dms/GuidedTour';
 
 const DEFAULT_ABILITIES = ['documents:create', 'documents:read'];
+const TOUR_SEEN_KEY = 'wsi-dms:api-clients:tour-seen';
 
 export default function ApiClientsIndex({ clients, users, abilityList, apiBaseUrl }) {
     const { flash } = usePage().props;
     const [editing, setEditing] = useState(null);
     const [showDocs, setShowDocs] = useState(false);
+    const [showGuide, setShowGuide] = useState(false);
+    const [touring, setTouring] = useState(false);
+    const [offerTour, setOfferTour] = useState(false);
     const { confirm, dialog } = useConfirm();
+
+    // Invite first-time visitors to the tour instead of starting it under them.
+    useEffect(() => {
+        if (!localStorage.getItem(TOUR_SEEN_KEY)) setOfferTour(true);
+    }, []);
+
+    function rememberTourSeen() {
+        localStorage.setItem(TOUR_SEEN_KEY, '1');
+        setOfferTour(false);
+    }
+
+    function startTour() {
+        rememberTourSeen();
+        setShowGuide(false);
+        setTouring(true);
+    }
+
+    const tourSteps = useMemo(
+        () => buildTourSteps({ hasClients: clients.length > 0, setShowDocs }),
+        [clients.length],
+    );
 
     const blank = {
         name: '', description: '', contact_email: '', user_id: '',
@@ -91,36 +118,53 @@ export default function ApiClientsIndex({ clients, users, abilityList, apiBaseUr
                             External systems that may create and read documents through the integration API.
                         </p>
                     </div>
-                    <GhostBtn onClick={() => setShowDocs(d => !d)}>
-                        {showDocs ? 'Hide' : 'View'} API reference
-                    </GhostBtn>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        <GhostBtn onClick={startTour}>
+                            ▶ Take a tour
+                        </GhostBtn>
+                        <GhostBtn data-tour="guide-btn" onClick={() => setShowGuide(g => !g)}>
+                            {showGuide ? 'Hide' : 'Read'} user guide
+                        </GhostBtn>
+                        <GhostBtn data-tour="docs-btn" onClick={() => setShowDocs(d => !d)}>
+                            {showDocs ? 'Hide' : 'View'} API reference
+                        </GhostBtn>
+                    </div>
                 </div>
+
+                {offerTour && (
+                    <TourOffer onStart={startTour} onDismiss={rememberTourSeen} />
+                )}
 
                 {flash?.success && <Banner tone="success">{flash.success}</Banner>}
 
                 {flash?.newToken && <TokenBanner payload={flash.newToken} />}
 
+                {showGuide && <ApiClientsGuide baseUrl={apiBaseUrl} onStartTour={startTour} />}
+
                 {showDocs && <ApiReference baseUrl={apiBaseUrl} />}
 
                 {/* ── Register ───────────────────────────────────────── */}
-                <Card title="Register an Application">
-                    <form onSubmit={handleCreate}>
-                        <ClientFields form={createForm} users={users} abilityList={abilityList} />
-                        <div style={{ marginTop: '1rem' }}>
-                            <IndigoBtn type="submit" disabled={createForm.processing}>
-                                {createForm.processing ? 'Registering…' : 'Register & Issue Token'}
-                            </IndigoBtn>
-                        </div>
-                    </form>
-                </Card>
+                <div data-tour="register-card">
+                    <Card title="Register an Application">
+                        <form onSubmit={handleCreate}>
+                            <ClientFields form={createForm} users={users} abilityList={abilityList} tour />
+                            <div style={{ marginTop: '1rem' }}>
+                                <IndigoBtn type="submit" data-tour="register-btn" disabled={createForm.processing}>
+                                    {createForm.processing ? 'Registering…' : 'Register & Issue Token'}
+                                </IndigoBtn>
+                            </div>
+                        </form>
+                    </Card>
+                </div>
 
                 {/* ── List ───────────────────────────────────────────── */}
+                <div data-tour="list-card">
                 <Card title={`${clients.length} Application${clients.length !== 1 ? 's' : ''}`}>
                     {clients.length === 0 ? (
                         <p style={{ color: '#94a3b8', fontSize: '0.85rem' }}>No applications registered yet.</p>
                     ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                            {clients.map(client => (
+                            {clients.map((client, i) => (
                                 <div key={client.id} style={{ border: '1px solid #e2e8f0', borderRadius: 8, padding: '1rem' }}>
                                     {editing === client.id ? (
                                         <form onSubmit={e => handleEdit(e, client.id)}>
@@ -145,7 +189,7 @@ export default function ApiClientsIndex({ clients, users, abilityList, apiBaseUr
                                                         {client.masked_token}
                                                     </div>
                                                 </div>
-                                                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+                                                <div data-tour={i === 0 ? 'row-actions' : undefined} style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-start' }}>
                                                     <GhostBtn onClick={() => startEdit(client)}>Edit</GhostBtn>
                                                     <GhostBtn onClick={() => regenerate(client)}>Regenerate token</GhostBtn>
                                                     <GhostBtn onClick={() => toggle(client)}>{client.is_active ? 'Disable' : 'Enable'}</GhostBtn>
@@ -153,7 +197,7 @@ export default function ApiClientsIndex({ clients, users, abilityList, apiBaseUr
                                                 </div>
                                             </div>
 
-                                            <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', marginTop: '0.9rem', paddingTop: '0.9rem', borderTop: '1px solid #f1f5f9' }}>
+                                            <div data-tour={i === 0 ? 'row-meta' : undefined} style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', marginTop: '0.9rem', paddingTop: '0.9rem', borderTop: '1px solid #f1f5f9' }}>
                                                 <Meta label="Documents owned by">{client.user_name ?? '—'}</Meta>
                                                 <Meta label="Documents created">{client.documents_count}</Meta>
                                                 <Meta label="Requests">{client.request_count}</Meta>
@@ -185,13 +229,117 @@ export default function ApiClientsIndex({ clients, users, abilityList, apiBaseUr
                         </div>
                     )}
                 </Card>
+                </div>
             </div>
             {dialog}
+            <GuidedTour steps={tourSteps} run={touring} onFinish={() => setTouring(false)} />
         </DmsLayout>
     );
 }
 
-function ClientFields({ form, users, abilityList }) {
+function TourOffer({ onStart, onDismiss }) {
+    return (
+        <div style={{ background: '#eef2ff', border: '1px solid #c7d2fe', borderRadius: 8, padding: '0.85rem 1rem', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <div style={{ flex: 1, minWidth: 220 }}>
+                <div style={{ fontWeight: 600, color: '#3730a3', fontSize: '0.85rem' }}>First time on this page?</div>
+                <p style={{ fontSize: '0.8rem', color: '#4f46e5', marginTop: 3 }}>
+                    Take a one-minute walkthrough — no jargon, nothing is changed while you look around.
+                </p>
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+                <IndigoBtn type="button" small onClick={onStart}>Show me around</IndigoBtn>
+                <GhostBtn type="button" onClick={onDismiss}>No thanks</GhostBtn>
+            </div>
+        </div>
+    );
+}
+
+function buildTourSteps({ hasClients, setShowDocs }) {
+    const steps = [
+        {
+            title: 'What this page is for',
+            body: 'This is where you let another system — an HR portal, a scanner, a partner’s software — file documents into the DMS on its own. You give it a name, decide what it may do, and hand its developer a secret token. Nothing you do during this tour changes anything.',
+        },
+        {
+            target: '[data-tour="guide-btn"]',
+            title: 'The written guide lives here',
+            body: 'A written version of everything here, including what to do when the other side reports an error. Open it any time.',
+        },
+        {
+            target: '[data-tour="register-card"]',
+            title: 'Step 1 — register the application',
+            body: 'Fill this form once per system you want to connect. Registering does not touch any documents; it only creates a key.',
+        },
+        {
+            target: '[data-tour="field-name"]',
+            title: 'Give it a name you will recognise',
+            body: 'Something like “HR Portal” or “Front-desk scanner”. This is only a label for you.',
+        },
+        {
+            target: '[data-tour="field-owner"]',
+            title: 'Decide who owns what it files',
+            body: 'Every document needs an owner in the DMS. Documents that arrive through this application are filed under the user you pick here.',
+        },
+        {
+            target: '[data-tour="field-rate"]',
+            title: 'A safety valve',
+            body: 'The most calls per minute this system may make. If it develops a fault and calls thousands of times, the DMS turns it away instead of slowing down for everyone. 60 is a fine starting point.',
+        },
+        {
+            target: '[data-tour="field-ips"]',
+            title: 'Optional extra lock',
+            body: 'An IP address is a computer’s return address on the internet. List the other system’s address and the DMS accepts calls from nowhere else — so even a stolen token is useless. Leave it empty if you do not know it.',
+        },
+        {
+            target: '[data-tour="permissions"]',
+            title: 'What it is allowed to do',
+            body: 'Tick only what this system genuinely needs — usually creating and reading documents. You can change this later without breaking anything.',
+        },
+        {
+            target: '[data-tour="register-btn"]',
+            title: 'Step 2 — get the token',
+            body: 'Pressing this creates the application and shows its token once, in a green box. The token is the key: copy it and send it to the developer straight away. Only a scrambled copy is stored here, so it can never be shown again — but you can always issue a fresh one.',
+        },
+        {
+            target: '[data-tour="list-card"]',
+            title: 'Step 3 — your registered applications',
+            body: 'Everything you have connected shows up here, with the last few characters of its token so you can tell them apart.',
+        },
+    ];
+
+    if (hasClients) {
+        steps.push(
+            {
+                target: '[data-tour="row-meta"]',
+                title: 'How to tell it is working',
+                body: '“Requests” counts every call the system has made — still zero means it has never connected. “Last used” shows when and from where, and “Documents created” shows how much it has filed.',
+            },
+            {
+                target: '[data-tour="row-actions"]',
+                title: 'Managing it later',
+                body: 'Edit changes the settings and keeps the token working. Regenerate issues a new token and kills the old one instantly — warn the developer first. Disable is a pause button you can undo. Delete is permanent, but the documents it created stay in the DMS.',
+            },
+        );
+    }
+
+    steps.push(
+        {
+            target: '[data-tour="docs-btn"]',
+            title: 'For the developer',
+            body: 'This panel lists every command their software can send, with ready-made examples. You do not need to understand it — just point them at it, along with the token.',
+            before: () => setShowDocs(true),
+        },
+        {
+            title: 'That is the whole page',
+            body: 'Register the system, copy the token once, hand over the token and the API reference, then watch the counters. If anything ever looks wrong, press Disable first and ask questions afterwards — nothing is lost. Reopen this tour any time with “Take a tour”.',
+            before: () => setShowDocs(false),
+        },
+    );
+
+    return steps;
+}
+
+function ClientFields({ form, users, abilityList, tour = false }) {
     const { data, setData, errors } = form;
 
     function toggleAbility(key) {
@@ -204,10 +352,10 @@ function ClientFields({ form, users, abilityList }) {
     return (
         <>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.9rem' }}>
-                <Field label="Application name" error={errors.name}>
+                <Field label="Application name" error={errors.name} tour={tour && 'field-name'}>
                     <input value={data.name} onChange={e => setData('name', e.target.value)} placeholder="e.g. HR Portal" style={inputSt} required />
                 </Field>
-                <Field label="Documents owned by" error={errors.user_id} hint="API-created documents are filed under this DMS user.">
+                <Field label="Documents owned by" error={errors.user_id} tour={tour && 'field-owner'} hint="API-created documents are filed under this DMS user.">
                     <select value={data.user_id} onChange={e => setData('user_id', e.target.value)} style={inputSt} required>
                         <option value="">Select a user…</option>
                         {users.map(u => <option key={u.id} value={String(u.id)}>{u.name} — {u.email}</option>)}
@@ -219,15 +367,15 @@ function ClientFields({ form, users, abilityList }) {
                 <Field label="Description (optional)" error={errors.description}>
                     <input value={data.description} onChange={e => setData('description', e.target.value)} placeholder="What this app does" style={inputSt} />
                 </Field>
-                <Field label="Rate limit (requests / minute)" error={errors.rate_limit_per_minute}>
+                <Field label="Rate limit (requests / minute)" error={errors.rate_limit_per_minute} tour={tour && 'field-rate'}>
                     <input type="number" min="1" max="10000" value={data.rate_limit_per_minute} onChange={e => setData('rate_limit_per_minute', e.target.value)} style={inputSt} required />
                 </Field>
-                <Field label="IP allowlist (optional)" error={errors.allowed_ips} hint="Comma separated. Leave empty to allow any IP.">
+                <Field label="IP allowlist (optional)" error={errors.allowed_ips} tour={tour && 'field-ips'} hint="Comma separated. Leave empty to allow any IP.">
                     <input value={data.allowed_ips} onChange={e => setData('allowed_ips', e.target.value)} placeholder="203.0.113.10, 203.0.113.11" style={inputSt} />
                 </Field>
             </div>
 
-            <div style={{ marginTop: '1rem' }}>
+            <div data-tour={tour ? 'permissions' : undefined} style={{ marginTop: '1rem' }}>
                 <label style={labelSt}>Permissions</label>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     {abilityList.map(a => (
@@ -392,9 +540,9 @@ function StatusPill({ active }) {
     );
 }
 
-function Field({ label, hint, error, children }) {
+function Field({ label, hint, error, tour, children }) {
     return (
-        <div>
+        <div data-tour={tour || undefined}>
             <label style={labelSt}>{label}</label>
             {children}
             {hint && <p style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: 4 }}>{hint}</p>}
