@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use OwenIt\Auditing\Contracts\Auditable;
 
 class Document extends Model implements Auditable
@@ -17,10 +18,6 @@ class Document extends Model implements Auditable
         'document_type_id',
         'owner_id',
         'api_client_id',
-        'code_type',
-        'code_id',
-        'code_value',
-        'code_image_path',
         'storage_location',
         'link_document_url',
         'allowed_users',
@@ -39,8 +36,6 @@ class Document extends Model implements Auditable
         'document_type_id',
         'owner_id',
         'api_client_id',
-        'code_type',
-        'code_id',
         'storage_location',
         'link_document_url',
         'allowed_users',
@@ -48,6 +43,28 @@ class Document extends Model implements Auditable
         'custom_fields',
         'scan_count',
     ];
+
+    /** Every tracking code issued for this document (QR, barcode, or both). */
+    public function codes(): HasMany
+    {
+        return $this->hasMany(DocumentCode::class)->orderBy('id');
+    }
+
+    /**
+     * The code that stands in wherever a single one has to be shown — the search
+     * dropdown, an export column. Codes are issued QR-first, so this is the QR
+     * whenever the document has one.
+     */
+    public function primaryCode(): ?DocumentCode
+    {
+        return $this->codes->first();
+    }
+
+    /** Storage paths of every code image, for cleanup on delete. */
+    public function codeImagePaths(): array
+    {
+        return $this->codes->pluck('image_path')->filter()->all();
+    }
 
     public function documentType(): BelongsTo
     {

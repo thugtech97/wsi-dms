@@ -198,11 +198,16 @@ function DocumentListTab({ data, docTypes, filters }) {
                         onMouseLeave={e => e.currentTarget.style.background = ''}
                     >
                         <td style={{ ...tdStyle, textAlign: 'center' }}>
-                            <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-                                <div style={{ border: '1px solid #e2e8f0', borderRadius: 4, padding: 2, background: '#fff' }}>
-                                    <img src={doc.codeImage} alt={doc.codeType} style={doc.codeType === 'QR' ? { width: 48, height: 48 } : { width: 72, height: 24, objectFit: 'contain' }} />
-                                </div>
-                                <span style={{ fontSize: '0.62rem', color: '#94a3b8', fontFamily: 'monospace' }}>{doc.codeId}</span>
+                            {/* A document can carry a QR and a barcode — show each. */}
+                            <div style={{ display: 'inline-flex', flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'center', gap: 12 }}>
+                                {(doc.codes ?? []).map(code => (
+                                    <div key={code.id ?? code.codeId} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+                                        <div style={{ border: '1px solid #e2e8f0', borderRadius: 4, padding: 2, background: '#fff' }}>
+                                            <img src={code.image} alt={code.type} style={code.type === 'QR' ? { width: 48, height: 48 } : { width: 72, height: 24, objectFit: 'contain' }} />
+                                        </div>
+                                        <span style={{ fontSize: '0.62rem', color: '#94a3b8', fontFamily: 'monospace' }}>{code.codeId}</span>
+                                    </div>
+                                ))}
                             </div>
                         </td>
                         <td style={{ ...tdStyle, fontWeight: 600, color: '#0f172a' }}>{doc.label}</td>

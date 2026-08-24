@@ -26,7 +26,7 @@ class DocumentController extends Controller
         $user    = auth()->user();
         $isAdmin = $user->hasRole('admin');
 
-        $documents = Document::with(['documentType', 'owner'])
+        $documents = Document::with(['documentType', 'owner', 'codes'])
             ->when(! $isAdmin, fn ($q) => $q->where('owner_id', $user->id))
             ->when($request->label,      fn ($q) => $q->where('name', 'like', "%{$request->label}%"))
             ->when($request->type,       fn ($q) => $q->whereHas('documentType', fn ($q2) => $q2->where('name', $request->type)))
@@ -41,9 +41,7 @@ class DocumentController extends Controller
                 'department'        => $d->department ?? '—',
                 'documentDate'      => $d->created_at->format('M d, Y'),
                 'owner'             => $d->owner->name,
-                'codeType'          => $d->code_type,
-                'codeId'            => $d->code_id,
-                'codeImage'         => url('storage/' . $d->code_image_path),
+                'codes'             => $d->codes->map->toDisplayArray()->all(),
                 'fileUrl'           => $d->file_path ? url('storage/' . $d->file_path) : null,
                 'link_document_url' => $d->link_document_url,
                 'allowed_users'     => $d->allowed_users ? json_decode($d->allowed_users, true) : [],
@@ -72,21 +70,21 @@ class DocumentController extends Controller
         $user    = auth()->user();
         $isAdmin = $user->hasRole('admin');
 
-        $docs = Document::with(['documentType', 'owner'])
+        $docs = Document::with(['documentType', 'owner', 'codes'])
             ->when(! $isAdmin, fn ($query) => $query->where('owner_id', $user->id))
             ->where(function ($query) use ($q) {
-                $query->where('code_id', 'like', "%{$q}%")
-                      ->orWhere('name', 'like', "%{$q}%");
+                $query->where('name', 'like', "%{$q}%")
+                      ->orWhereHas('codes', fn ($c) => $c
+                          ->where('code_id', 'like', "%{$q}%")
+                          ->orWhere('code_value', 'like', "%{$q}%"));
             })
             ->latest()
             ->limit(8)
             ->get()
             ->map(fn ($d) => [
-                'id'        => $d->id,
-                'name'      => $d->name,
-                'codeId'    => $d->code_id,
-                'codeType'  => $d->code_type,
-                'codeImage' => url('storage/' . $d->code_image_path),
+                'id'    => $d->id,
+                'name'  => $d->name,
+                'codes' => $d->codes->map->toDisplayArray()->all(),
             ]);
 
         return response()->json($docs);
@@ -96,24 +94,27 @@ class DocumentController extends Controller
     {
         $fields = DocumentSchema::fields();
 
-        // Tracking code is never part of the customisable schema — it is always required.
+        // Tracking code is never part of the customisable schema — it is always
+        // required, and a document may carry a QR code, a barcode, or both.
         $request->validate(
-            DocumentSchema::rules($fields) + ['code_type' => 'required|in:QR,Barcode'],
-            [],
+            DocumentSchema::rules($fields) + [
+                'code_types'   => 'required|array|min:1',
+                'code_types.*' => 'in:QR,Barcode',
+            ],
+            [
+                'code_types.required' => 'Pick at least one tracking code.',
+                'code_types.min'      => 'Pick at least one tracking code.',
+            ],
             DocumentSchema::attributes($fields),
         );
-
-        $code = $this->codes->generate($request->code_type);
 
         $document = Document::create(DocumentSchema::payload($fields, $request->all()) + [
             'file_path'        => null,
             'owner_id'         => auth()->id(),
-            'code_type'        => $request->code_type,
-            'code_id'          => $code['code_id'],
-            'code_value'       => $code['code_value'],
-            'code_image_path'  => $code['code_image_path'],
             'storage_location' => null,
         ]);
+
+        $this->codes->issue($document, $request->input('code_types', []));
 
         auth()->user()->notify(new DocumentUploadedNotification($document));
 
@@ -140,7 +141,7 @@ class DocumentController extends Controller
 
     public function destroy(Document $document)
     {
-        $files = array_filter([$document->file_path, $document->code_image_path]);
+        $files = array_filter([$document->file_path, ...$document->codeImagePaths()]);
         if ($files) Storage::disk('public')->delete($files);
         $document->delete();
 

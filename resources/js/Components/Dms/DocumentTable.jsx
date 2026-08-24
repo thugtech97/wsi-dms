@@ -8,6 +8,14 @@ import DynamicFormFields, {
     fieldIcon,
 } from './DynamicFormFields';
 import { useResponsive } from '@/hooks/useResponsive';
+import {
+    CodeCell,
+    CodePanel,
+    isQrCode,
+    codeLabel,
+    codeImageStyle,
+    codeIdList,
+} from './DocumentCodes';
 
 const TH = { fontWeight: 600, textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.5px', color: '#64748b', padding: '0.85rem 1.25rem', borderBottom: '2px solid #f1f5f9', background: '#f8fafc' };
 const TD = { padding: '1rem 1.25rem', borderBottom: '1px solid #f1f5f9', fontSize: '0.85rem', color: '#334155' };
@@ -32,7 +40,8 @@ export default function DocumentTable({ documents, documentTypes = [], users = [
                     <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: isMobile ? 340 : undefined }}>
                         <thead>
                             <tr>
-                                <th style={{ ...TH, width: isMobile ? 60 : 90 }}>Asset</th>
+                                {/* Wide enough for a QR and a barcode side by side. */}
+                                <th style={{ ...TH, width: isMobile ? 110 : 175 }}>Asset</th>
                                 <th style={TH}>Label</th>
                                 <th style={TH}>Document Class</th>
                                 {!isMobile && <th style={TH}>URL</th>}
@@ -73,8 +82,6 @@ export default function DocumentTable({ documents, documentTypes = [], users = [
 }
 
 function DocumentRow({ doc, onView, isMobile }) {
-    const isQR = doc.codeType === 'QR';
-    const imgSize = isMobile ? 36 : 52;
     return (
         <tr style={{ transition: 'background 0.15s' }}
             onMouseEnter={e => e.currentTarget.style.background = '#fafafa'}
@@ -82,21 +89,7 @@ function DocumentRow({ doc, onView, isMobile }) {
             className="text-center"
         >
             <td style={{ ...TD, padding: isMobile ? '0.6rem 0.75rem' : TD.padding }}>
-                <div style={{ display: 'inline-block', textAlign: 'center' }}>
-                    <div style={{ border: '1px solid #e2e8f0', borderRadius: 4, padding: 3, background: '#fff', display: 'inline-block' }}>
-                        <img
-                            src={doc.codeImage}
-                            alt={isQR ? 'QR' : 'Barcode'}
-                            style={isQR
-                                ? { width: imgSize, height: imgSize }
-                                : { width: isMobile ? 52 : 76, height: isMobile ? 20 : 26, objectFit: 'contain' }
-                            }
-                        />
-                    </div>
-                    <div style={{ fontSize: '0.62rem', color: '#94a3b8', marginTop: 2, fontFamily: 'monospace' }}>
-                        {doc.codeId}
-                    </div>
-                </div>
+                <CodeCell codes={doc.codes} compact={isMobile} />
             </td>
             <td style={{ ...TD, padding: isMobile ? '0.6rem 0.75rem' : TD.padding }}>
                 <span style={{ fontWeight: 600, color: '#0f172a', fontSize: isMobile ? '0.8rem' : '0.85rem', wordBreak: 'break-word' }}>
@@ -129,7 +122,7 @@ function DocumentRow({ doc, onView, isMobile }) {
 
 // ── Modal ─────────────────────────────────────────────────────────────────────
 function DocumentViewModal({ doc, documentTypes, users, roles, formFields = [], onClose }) {
-    const isQR = doc.codeType === 'QR';
+    const codes = doc.codes ?? [];
     const [activeTab,     setActiveTab]     = useState('details');
     const [confirmDelete, setConfirmDelete] = useState(false);
     const [deleting, setDeleting]           = useState(false);
@@ -163,32 +156,47 @@ function DocumentViewModal({ doc, documentTypes, users, roles, formFields = [], 
         });
     }
 
-    function handlePrint() {
-        const win = window.open('', '_blank', 'width=480,height=600');
-        win.document.write(`<!DOCTYPE html><html><head><title>Print – ${doc.codeId}</title>
-        <style>
-            * { margin:0; padding:0; box-sizing:border-box; }
-            body { font-family:'Inter',Arial,sans-serif; background:#fff; display:flex; align-items:center; justify-content:center; min-height:100vh; }
-            .card { border:1.5px solid #e2e8f0; border-radius:12px; padding:28px 32px; max-width:360px; width:100%; text-align:center; }
-            .label { font-size:1rem; font-weight:700; color:#0f172a; margin-bottom:18px; word-break:break-word; }
-            .img-wrap { display:inline-block; padding:${isQR ? '10px' : '12px 16px'}; border:1px solid #e2e8f0; border-radius:8px; background:#fff; margin-bottom:14px; }
-            img { display:block; ${isQR ? 'width:180px;height:180px;' : 'width:220px;height:68px;object-fit:contain;'} }
-            .code { font-family:monospace; font-size:0.9rem; font-weight:700; color:#4f46e5; background:#eef2ff; border:1px solid #c7d2fe; border-radius:6px; padding:4px 14px; display:inline-block; margin-bottom:16px; letter-spacing:0.5px; }
-            .meta { font-size:0.78rem; color:#64748b; line-height:1.8; }
-            .meta strong { color:#334155; }
-            @media print { body { min-height:unset; } .card { border:none; } }
-        </style></head><body>
-        <div class="card">
+    /**
+     * Prints one label card per code, so a document holding both a QR and a
+     * barcode comes out as two cards on their own pages.
+     */
+    function handlePrint(only = null) {
+        const printing = only ? [only] : codes;
+        if (printing.length === 0) return;
+
+        const cards = printing.map(code => `
+        <div class="card ${isQrCode(code) ? 'qr' : 'bc'}">
             <div class="label">${doc.label}</div>
-            <div class="img-wrap"><img src="${doc.codeImage}" /></div>
-            <div class="code">${doc.codeId}</div>
+            <div class="img-wrap"><img src="${code.image}" /></div>
+            <div class="code">${code.codeId}</div>
             <div class="meta">
                 <div><strong>Document Class:</strong> ${doc.type}</div>
                 <div><strong>Department:</strong> ${doc.department}</div>
                 <div><strong>Document Date:</strong> ${doc.documentDate}</div>
                 <div><strong>Added By:</strong> ${doc.owner}</div>
             </div>
-        </div>
+        </div>`).join('');
+
+        const win = window.open('', '_blank', 'width=480,height=600');
+        win.document.write(`<!DOCTYPE html><html><head><title>Print – ${codeIdList(printing)}</title>
+        <style>
+            * { margin:0; padding:0; box-sizing:border-box; }
+            body { font-family:'Inter',Arial,sans-serif; background:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:24px; min-height:100vh; padding:24px; }
+            .card { border:1.5px solid #e2e8f0; border-radius:12px; padding:28px 32px; max-width:360px; width:100%; text-align:center; }
+            .card + .card { page-break-before:always; }
+            .label { font-size:1rem; font-weight:700; color:#0f172a; margin-bottom:18px; word-break:break-word; }
+            .img-wrap { display:inline-block; border:1px solid #e2e8f0; border-radius:8px; background:#fff; margin-bottom:14px; }
+            .qr .img-wrap { padding:10px; }
+            .bc .img-wrap { padding:12px 16px; }
+            img { display:block; }
+            .qr img { width:180px; height:180px; }
+            .bc img { width:220px; height:68px; object-fit:contain; }
+            .code { font-family:monospace; font-size:0.9rem; font-weight:700; color:#4f46e5; background:#eef2ff; border:1px solid #c7d2fe; border-radius:6px; padding:4px 14px; display:inline-block; margin-bottom:16px; letter-spacing:0.5px; }
+            .meta { font-size:0.78rem; color:#64748b; line-height:1.8; }
+            .meta strong { color:#334155; }
+            @media print { body { min-height:unset; padding:0; gap:0; } .card { border:none; } }
+        </style></head><body>
+        ${cards}
         <script>window.onload=function(){ window.print(); window.onafterprint=function(){ window.close(); }; }<\/script>
         </body></html>`);
         win.document.close();
@@ -260,26 +268,27 @@ function DocumentViewModal({ doc, documentTypes, users, roles, formFields = [], 
                             background: 'linear-gradient(160deg, #f8fafc 0%, #eef2ff 100%)',
                             borderRight: isMobile ? 'none' : '1px solid #e2e8f0',
                             borderBottom: isMobile ? '1px solid #e2e8f0' : 'none',
-                            display: 'flex', flexDirection: isMobile ? 'row' : 'column',
+                            display: 'flex', flexDirection: 'column',
                             alignItems: 'center', justifyContent: 'center',
                             padding: isMobile ? '1rem 1.25rem' : '2rem 1.5rem',
-                            gap: 16, flexWrap: isMobile ? 'wrap' : 'nowrap',
+                            gap: 20, flexWrap: 'wrap',
+                            overflowY: 'auto',
                         }}>
-                            <div style={{ background: '#fff', borderRadius: 12, padding: isQR ? 12 : 16, boxShadow: '0 4px 20px rgba(99,102,241,0.1)', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                <img src={doc.codeImage} alt={isQR ? 'QR Code' : 'Barcode'}
-                                    style={isQR ? { width: qrSize, height: qrSize, display: 'block' } : { width: bcW, height: bcH, objectFit: 'contain', display: 'block' }} />
-                            </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: isMobile ? 'flex-start' : 'center', gap: 8, flex: isMobile ? 1 : 'unset' }}>
-                                <div style={{ fontFamily: 'monospace', fontSize: '0.85rem', fontWeight: 700, color: '#4f46e5', background: '#eef2ff', border: '1px solid #c7d2fe', borderRadius: 6, padding: '0.28rem 0.7rem', display: 'inline-block', letterSpacing: '0.5px' }}>
-                                    {doc.codeId}
-                                </div>
-                                <div style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 500 }}>
-                                    {isQR ? '⬛ QR Code' : '▐▌ Barcode'}
-                                </div>
-                                <button onClick={() => setActiveTab('print-preview')} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0.45rem 0.85rem', background: '#fff', border: '1px solid #c7d2fe', borderRadius: 7, fontSize: '0.75rem', fontWeight: 600, color: '#4f46e5', cursor: 'pointer' }}>
-                                    <PrintIcon /> Print {isQR ? 'QR' : 'Barcode'}
+                            <CodePanel
+                                codes={codes}
+                                sizes={{ qr: qrSize, bcW, bcH }}
+                                align={isMobile ? 'flex-start' : 'center'}
+                                renderAction={code => (
+                                    <button onClick={() => handlePrint(code)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0.45rem 0.85rem', background: '#fff', border: '1px solid #c7d2fe', borderRadius: 7, fontSize: '0.75rem', fontWeight: 600, color: '#4f46e5', cursor: 'pointer' }}>
+                                        <PrintIcon /> Print {isQrCode(code) ? 'QR' : 'Barcode'}
+                                    </button>
+                                )}
+                            />
+                            {codes.length > 1 && (
+                                <button onClick={() => setActiveTab('print-preview')} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0.45rem 0.85rem', background: '#eef2ff', border: '1px solid #c7d2fe', borderRadius: 7, fontSize: '0.75rem', fontWeight: 600, color: '#4f46e5', cursor: 'pointer' }}>
+                                    <PrintIcon /> Preview both labels
                                 </button>
-                            </div>
+                            )}
                         </div>
 
                         {/* Details panel */}
@@ -353,29 +362,35 @@ function DocumentViewModal({ doc, documentTypes, users, roles, formFields = [], 
                 {/* ── Print Preview tab ── */}
                 {activeTab === 'print-preview' && (
                     <div style={{ flex: 1, overflowY: 'auto', padding: isMobile ? '1.25rem 1rem' : '1.75rem 2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.25rem', background: '#f8fafc' }}>
-                        <p style={{ fontSize: '0.78rem', color: '#94a3b8', alignSelf: 'flex-start' }}>Preview of the printed {isQR ? 'QR code' : 'barcode'} label.</p>
+                        <p style={{ fontSize: '0.78rem', color: '#94a3b8', alignSelf: 'flex-start' }}>
+                            {codes.length > 1
+                                ? 'Preview of the printed labels — each code prints on its own page.'
+                                : `Preview of the printed ${codes[0] ? codeLabel(codes[0]).toLowerCase() : 'code'} label.`}
+                        </p>
 
-                        {/* Print card */}
-                        <div style={{ background: '#fff', border: '1.5px solid #e2e8f0', borderRadius: 12, padding: '28px 32px', maxWidth: 360, width: '100%', textAlign: 'center', boxShadow: '0 4px 24px rgba(0,0,0,0.07)' }}>
-                            <div style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a', marginBottom: 18, wordBreak: 'break-word' }}>{doc.label}</div>
-                            <div style={{ display: 'inline-block', padding: isQR ? 10 : '12px 16px', border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', marginBottom: 14 }}>
-                                <img src={doc.codeImage} alt={isQR ? 'QR' : 'Barcode'}
-                                    style={isQR ? { width: 180, height: 180, display: 'block' } : { width: 220, height: 68, objectFit: 'contain', display: 'block' }} />
+                        {/* One print card per code */}
+                        {codes.map(code => (
+                            <div key={code.id ?? code.codeId} style={{ background: '#fff', border: '1.5px solid #e2e8f0', borderRadius: 12, padding: '28px 32px', maxWidth: 360, width: '100%', textAlign: 'center', boxShadow: '0 4px 24px rgba(0,0,0,0.07)' }}>
+                                <div style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a', marginBottom: 18, wordBreak: 'break-word' }}>{doc.label}</div>
+                                <div style={{ display: 'inline-block', padding: isQrCode(code) ? 10 : '12px 16px', border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', marginBottom: 14 }}>
+                                    <img src={code.image} alt={codeLabel(code)}
+                                        style={codeImageStyle(code, { qr: 180, bcW: 220, bcH: 68 })} />
+                                </div>
+                                <div style={{ fontFamily: 'monospace', fontSize: '0.9rem', fontWeight: 700, color: '#4f46e5', background: '#eef2ff', border: '1px solid #c7d2fe', borderRadius: 6, padding: '4px 14px', display: 'inline-block', marginBottom: 16, letterSpacing: '0.5px' }}>
+                                    {code.codeId}
+                                </div>
+                                <div style={{ fontSize: '0.78rem', color: '#64748b', lineHeight: 1.9, textAlign: 'left' }}>
+                                    <div><strong style={{ color: '#334155' }}>Document Class:</strong> {doc.type}</div>
+                                    <div><strong style={{ color: '#334155' }}>Department:</strong> {doc.department}</div>
+                                    <div><strong style={{ color: '#334155' }}>Document Date:</strong> {doc.documentDate}</div>
+                                    <div><strong style={{ color: '#334155' }}>Added By:</strong> {doc.owner}</div>
+                                </div>
                             </div>
-                            <div style={{ fontFamily: 'monospace', fontSize: '0.9rem', fontWeight: 700, color: '#4f46e5', background: '#eef2ff', border: '1px solid #c7d2fe', borderRadius: 6, padding: '4px 14px', display: 'inline-block', marginBottom: 16, letterSpacing: '0.5px' }}>
-                                {doc.codeId}
-                            </div>
-                            <div style={{ fontSize: '0.78rem', color: '#64748b', lineHeight: 1.9, textAlign: 'left' }}>
-                                <div><strong style={{ color: '#334155' }}>Document Class:</strong> {doc.type}</div>
-                                <div><strong style={{ color: '#334155' }}>Department:</strong> {doc.department}</div>
-                                <div><strong style={{ color: '#334155' }}>Document Date:</strong> {doc.documentDate}</div>
-                                <div><strong style={{ color: '#334155' }}>Added By:</strong> {doc.owner}</div>
-                            </div>
-                        </div>
+                        ))}
 
                         {/* Print button */}
-                        <button onClick={handlePrint} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0.65rem 1.75rem', background: '#6366f1', color: '#fff', fontWeight: 700, fontSize: '0.88rem', borderRadius: 9, border: 'none', cursor: 'pointer', boxShadow: '0 4px 12px rgba(99,102,241,0.3)' }}>
-                            <PrintIcon size={16} /> Print {isQR ? 'QR Code' : 'Barcode'}
+                        <button onClick={() => handlePrint()} disabled={codes.length === 0} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0.65rem 1.75rem', background: '#6366f1', color: '#fff', fontWeight: 700, fontSize: '0.88rem', borderRadius: 9, border: 'none', cursor: 'pointer', boxShadow: '0 4px 12px rgba(99,102,241,0.3)' }}>
+                            <PrintIcon size={16} /> {codes.length > 1 ? 'Print Both Labels' : `Print ${codes[0] ? codeLabel(codes[0]) : 'Label'}`}
                         </button>
                     </div>
                 )}
@@ -430,12 +445,16 @@ function DocumentEditModal({ doc, documentTypes, users, roles, formFields = [], 
                         sources={sources}
                     />
 
-                    {/* Tracking code is fixed at creation time and shown read-only here. */}
-                    <EditField label="Tracking Code">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0.5rem 0.7rem', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 7 }}>
-                            <span style={{ fontSize: '0.95rem' }}>{doc.codeType === 'QR' ? '⬛' : '▐▌'}</span>
-                            <span style={{ fontFamily: 'monospace', fontSize: '0.82rem', fontWeight: 700, color: '#4f46e5' }}>{doc.codeId}</span>
-                            <span style={{ fontSize: '0.75rem', color: '#94a3b8', marginLeft: 'auto' }}>Cannot be changed</span>
+                    {/* Tracking codes are fixed at creation time and shown read-only here. */}
+                    <EditField label={(doc.codes ?? []).length > 1 ? 'Tracking Codes' : 'Tracking Code'}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                            {(doc.codes ?? []).map(code => (
+                                <div key={code.id ?? code.codeId} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0.5rem 0.7rem', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 7 }}>
+                                    <span style={{ fontSize: '0.95rem' }}>{isQrCode(code) ? '⬛' : '▐▌'}</span>
+                                    <span style={{ fontFamily: 'monospace', fontSize: '0.82rem', fontWeight: 700, color: '#4f46e5' }}>{code.codeId}</span>
+                                    <span style={{ fontSize: '0.75rem', color: '#94a3b8', marginLeft: 'auto' }}>Cannot be changed</span>
+                                </div>
+                            ))}
                         </div>
                     </EditField>
 

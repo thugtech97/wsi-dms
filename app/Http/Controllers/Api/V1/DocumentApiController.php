@@ -4,11 +4,13 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Resources\DocumentResource;
 use App\Models\Document;
+use App\Models\DocumentCode;
 use App\Notifications\DocumentUploadedNotification;
 use App\Services\DocumentCodeGenerator;
 use App\Support\DocumentSchema;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
@@ -28,7 +30,7 @@ class DocumentApiController extends ApiController
             'type'      => 'nullable|string|max:100',
             'type_id'   => 'nullable|integer',
             'department'=> 'nullable|string|max:255',
-            'code_type' => ['nullable', Rule::in(['QR', 'Barcode'])],
+            'code_type' => ['nullable', Rule::in(DocumentCode::TYPES)],
             'from'      => 'nullable|date',
             'to'        => 'nullable|date',
             'per_page'  => 'nullable|integer|min:1|max:100',
@@ -40,15 +42,16 @@ class DocumentApiController extends ApiController
         $direction = str_starts_with($sort, '-') ? 'desc' : 'asc';
 
         $documents = $this->scope($request)
-            ->with(['documentType', 'owner', 'apiClient'])
+            ->with(['documentType', 'owner', 'apiClient', 'codes'])
             ->when($request->q, fn ($q, $term) => $q->where(fn ($w) => $w
                 ->where('name', 'like', "%{$term}%")
-                ->orWhere('code_id', 'like', "%{$term}%")
-                ->orWhere('code_value', 'like', "%{$term}%")))
+                ->orWhereHas('codes', fn ($c) => $c
+                    ->where('code_id', 'like', "%{$term}%")
+                    ->orWhere('code_value', 'like', "%{$term}%"))))
             ->when($request->type, fn ($q, $type) => $q->whereHas('documentType', fn ($t) => $t->where('name', $type)))
             ->when($request->type_id, fn ($q, $id) => $q->where('document_type_id', $id))
             ->when($request->department, fn ($q, $d) => $q->where('department', 'like', "%{$d}%"))
-            ->when($request->code_type, fn ($q, $t) => $q->where('code_type', $t))
+            ->when($request->code_type, fn ($q, $t) => $q->whereHas('codes', fn ($c) => $c->where('type', $t)))
             ->when($request->from, fn ($q, $from) => $q->whereDate('created_at', '>=', $from))
             ->when($request->to, fn ($q, $to) => $q->whereDate('created_at', '<=', $to))
             ->orderBy($column, $direction)
@@ -74,34 +77,38 @@ class DocumentApiController extends ApiController
     {
         $fields = DocumentSchema::fields();
 
+        // `code_types: ["QR", "Barcode"]` is the current form; the older
+        // `code_type: "QR"` still works so existing integrations keep running.
+        $request->merge(['code_types' => $this->requestedTypes($request)]);
+
         $validated = $request->validate(
             DocumentSchema::rules($fields) + [
-                'code_type'  => ['required', Rule::in(['QR', 'Barcode'])],
-                'code_value' => ['nullable', 'string', 'max:180', 'unique:documents,code_value', 'unique:documents,code_id'],
+                'code_types'   => ['required', 'array', 'min:1'],
+                'code_types.*' => [Rule::in(DocumentCode::TYPES)],
+                'code_value'   => ['nullable', 'string', 'max:180', 'unique:document_codes,code_value', 'unique:document_codes,code_id'],
             ],
             [
-                'code_value.unique' => 'That code value is already used by another document.',
+                'code_types.required' => 'Give at least one code type: QR, Barcode, or both.',
+                'code_types.min'      => 'Give at least one code type: QR, Barcode, or both.',
+                'code_value.unique'   => 'That code value is already used by another document.',
             ],
             DocumentSchema::attributes($fields),
         );
 
         $client = $this->client($request);
-        $code   = $this->codes->generate($validated['code_type'], $validated['code_value'] ?? null);
 
         $document = Document::create(DocumentSchema::payload($fields, $request->all()) + [
             'file_path'        => null,
             'owner_id'         => $client->user_id,
             'api_client_id'    => $client->id,
-            'code_type'        => $validated['code_type'],
-            'code_id'          => $code['code_id'],
-            'code_value'       => $code['code_value'],
-            'code_image_path'  => $code['code_image_path'],
             'storage_location' => null,
         ]);
 
+        $this->codes->issue($document, $validated['code_types'], $validated['code_value'] ?? null);
+
         $client->user?->notify(new DocumentUploadedNotification($document));
 
-        $document->load(['documentType', 'owner', 'apiClient']);
+        $document->load(['documentType', 'owner', 'apiClient', 'codes']);
 
         return $this->ok((new DocumentResource($document))->resolve($request), 201);
     }
@@ -111,7 +118,7 @@ class DocumentApiController extends ApiController
      */
     public function show(Request $request, int $id): JsonResponse
     {
-        $document = $this->scope($request)->with(['documentType', 'owner', 'apiClient'])->find($id);
+        $document = $this->scope($request)->with(['documentType', 'owner', 'apiClient', 'codes'])->find($id);
 
         if (! $document) {
             return $this->fail('Document not found.', 404);
@@ -122,12 +129,13 @@ class DocumentApiController extends ApiController
 
     /**
      * GET /api/v1/documents/lookup/{code} — resolve a scanned QR / barcode.
+     * Either code of a document resolves to that same document.
      */
     public function lookup(Request $request, string $code): JsonResponse
     {
         $document = $this->scope($request)
-            ->with(['documentType', 'owner', 'apiClient'])
-            ->where(fn ($q) => $q->where('code_value', $code)
+            ->with(['documentType', 'owner', 'apiClient', 'codes'])
+            ->whereHas('codes', fn ($c) => $c->where('code_value', $code)
                 ->orWhere('code_id', $code)
                 ->orWhere('code_id', '#' . ltrim($code, '#')))
             ->first();
@@ -140,7 +148,7 @@ class DocumentApiController extends ApiController
             $document->increment('scan_count');
         }
 
-        return $this->ok((new DocumentResource($document->refresh()->load(['documentType', 'owner', 'apiClient'])))->resolve($request));
+        return $this->ok((new DocumentResource($document->refresh()->load(['documentType', 'owner', 'apiClient', 'codes'])))->resolve($request));
     }
 
     /**
@@ -164,7 +172,7 @@ class DocumentApiController extends ApiController
 
         $document->update(DocumentSchema::payload($fields, $request->all(), $document, onlySubmitted: true));
 
-        return $this->ok((new DocumentResource($document->load(['documentType', 'owner', 'apiClient'])))->resolve($request));
+        return $this->ok((new DocumentResource($document->load(['documentType', 'owner', 'apiClient', 'codes'])))->resolve($request));
     }
 
     /**
@@ -197,7 +205,7 @@ class DocumentApiController extends ApiController
             return $this->fail('Document not found.', 404);
         }
 
-        $files = array_filter([$document->file_path, $document->code_image_path]);
+        $files = array_filter([$document->file_path, ...$document->codeImagePaths()]);
         if ($files) {
             Storage::disk('public')->delete($files);
         }
@@ -205,6 +213,28 @@ class DocumentApiController extends ApiController
         $document->delete();
 
         return $this->ok(['deleted' => true, 'id' => $id]);
+    }
+
+    /**
+     * The code types asked for, accepting either `code_types` (array or CSV) or
+     * the legacy single `code_type`.
+     *
+     * @return array<int, string>
+     */
+    private function requestedTypes(Request $request): array
+    {
+        $types = $request->input('code_types', $request->input('code_type'));
+
+        if (is_string($types)) {
+            $types = explode(',', $types);
+        }
+
+        return collect(Arr::wrap($types))
+            ->map(fn ($type) => trim((string) $type))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
     }
 
     /**

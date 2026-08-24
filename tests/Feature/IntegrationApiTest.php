@@ -2,6 +2,7 @@
 
 use App\Models\ApiClient;
 use App\Models\Document;
+use App\Models\DocumentCode;
 use App\Models\DocumentType;
 use App\Models\User;
 use Illuminate\Support\Facades\Storage;
@@ -29,6 +30,18 @@ function authed(string $token): array
     return ['Authorization' => 'Bearer ' . $token, 'Accept' => 'application/json'];
 }
 
+/** A document plus the tracking codes it carries. */
+function documentWithCodes(array $attributes, array $codes): Document
+{
+    $document = Document::create($attributes);
+
+    foreach ($codes as $code) {
+        $document->codes()->create($code);
+    }
+
+    return $document;
+}
+
 it('rejects a request without a token', function () {
     $this->getJson('/api/v1/me')->assertStatus(401)->assertJson(['success' => false]);
 });
@@ -53,38 +66,121 @@ it('creates a document with a generated QR code', function () {
     $response = $this->postJson('/api/v1/documents', [
         'label'            => 'Purchase Order 118',
         'document_type_id' => $this->type->id,
-        'code_type'        => 'QR',
+        'code_types'       => ['QR'],
     ], authed($this->token));
 
     $response->assertStatus(201)
         ->assertJsonPath('success', true)
         ->assertJsonPath('data.label', 'Purchase Order 118')
+        ->assertJsonCount(1, 'data.codes')
+        ->assertJsonPath('data.codes.0.type', 'QR')
+        // `code` stays for integrations written before multi-code support.
         ->assertJsonPath('data.code.type', 'QR');
 
     $document = Document::firstOrFail();
+    $code     = $document->codes()->firstOrFail();
 
     expect($document->owner_id)->toBe($this->owner->id)
         ->and($document->api_client_id)->toBe($this->client->id)
-        ->and($document->code_id)->toStartWith('#QR-');
+        ->and($code->code_id)->toStartWith('#QR-');
 
-    Storage::disk('public')->assertExists($document->code_image_path);
+    Storage::disk('public')->assertExists($code->image_path);
+});
+
+it('issues a QR and a barcode that share one number', function () {
+    $response = $this->postJson('/api/v1/documents', [
+        'label'            => 'Delivery Receipt 42',
+        'document_type_id' => $this->type->id,
+        'code_types'       => ['Barcode', 'QR'],
+    ], authed($this->token));
+
+    $response->assertStatus(201)
+        ->assertJsonCount(2, 'data.codes')
+        // QR is always issued first, so it is the one `code` falls back to.
+        ->assertJsonPath('data.codes.0.type', 'QR')
+        ->assertJsonPath('data.codes.1.type', 'Barcode')
+        ->assertJsonPath('data.code.type', 'QR');
+
+    $document = Document::firstOrFail();
+    $qr       = $document->codes()->where('type', 'QR')->firstOrFail();
+    $barcode  = $document->codes()->where('type', 'Barcode')->firstOrFail();
+
+    $number = str_replace('#QR-', '', $qr->code_id);
+
+    expect($barcode->code_id)->toBe('#BC-' . $number)
+        ->and($qr->code_value)->toBe('DOC-' . $number)
+        ->and($barcode->code_value)->toBe('BC-' . $number);
+
+    Storage::disk('public')->assertExists($qr->image_path);
+    Storage::disk('public')->assertExists($barcode->image_path);
+});
+
+it('resolves either code of a two-code document', function () {
+    $this->postJson('/api/v1/documents', [
+        'label'            => 'Two codes',
+        'document_type_id' => $this->type->id,
+        'code_types'       => ['QR', 'Barcode'],
+    ], authed($this->token))->assertStatus(201);
+
+    $document = Document::firstOrFail();
+
+    foreach ($document->codes as $code) {
+        $this->getJson('/api/v1/documents/lookup/' . $code->code_value, authed($this->token))
+            ->assertOk()
+            ->assertJsonPath('data.id', $document->id);
+    }
+});
+
+it('still accepts the legacy single code_type', function () {
+    $this->postJson('/api/v1/documents', [
+        'label'            => 'Legacy caller',
+        'document_type_id' => $this->type->id,
+        'code_type'        => 'Barcode',
+    ], authed($this->token))
+        ->assertStatus(201)
+        ->assertJsonCount(1, 'data.codes')
+        ->assertJsonPath('data.codes.0.type', 'Barcode');
+});
+
+it('rejects a create with no code type at all', function () {
+    $this->postJson('/api/v1/documents', [
+        'label'            => 'No code',
+        'document_type_id' => $this->type->id,
+    ], authed($this->token))
+        ->assertStatus(422)
+        ->assertJsonStructure(['errors' => ['code_types']]);
 });
 
 it('encodes a caller supplied code value', function () {
     $this->postJson('/api/v1/documents', [
         'label'            => 'Invoice 9001',
         'document_type_id' => $this->type->id,
-        'code_type'        => 'Barcode',
+        'code_types'       => ['Barcode'],
         'code_value'       => 'INV-9001',
     ], authed($this->token))->assertStatus(201)
-        ->assertJsonPath('data.code.value', 'INV-9001');
+        ->assertJsonPath('data.codes.0.value', 'INV-9001')
+        ->assertJsonPath('data.codes.0.reference', 'INV-9001');
+});
+
+it('encodes one caller supplied value into both code types', function () {
+    $this->postJson('/api/v1/documents', [
+        'label'            => 'Invoice 9002',
+        'document_type_id' => $this->type->id,
+        'code_types'       => ['QR', 'Barcode'],
+        'code_value'       => 'INV-9002',
+    ], authed($this->token))->assertStatus(201)
+        ->assertJsonPath('data.codes.0.value', 'INV-9002')
+        ->assertJsonPath('data.codes.1.value', 'INV-9002')
+        // Two codes cannot share one reference, so each gets its type prefix.
+        ->assertJsonPath('data.codes.0.reference', '#QR-INV-9002')
+        ->assertJsonPath('data.codes.1.reference', '#BC-INV-9002');
 });
 
 it('refuses a duplicate code value', function () {
     $payload = [
         'label'            => 'Invoice 9001',
         'document_type_id' => $this->type->id,
-        'code_type'        => 'Barcode',
+        'code_types'       => ['Barcode'],
         'code_value'       => 'INV-9001',
     ];
 
@@ -95,21 +191,23 @@ it('refuses a duplicate code value', function () {
 });
 
 it('validates against the admin configured form schema', function () {
-    $this->postJson('/api/v1/documents', ['code_type' => 'Fax'], authed($this->token))
+    $this->postJson('/api/v1/documents', ['code_types' => ['Fax']], authed($this->token))
         ->assertStatus(422)
-        ->assertJsonStructure(['success', 'message', 'errors' => ['label', 'document_type_id', 'code_type']]);
+        ->assertJsonStructure(['success', 'message', 'errors' => ['label', 'document_type_id', 'code_types.0']]);
 });
 
 it('only lists documents the application created', function () {
-    $mine = Document::create([
+    $mine = documentWithCodes([
         'name' => 'Mine', 'document_type_id' => $this->type->id, 'owner_id' => $this->owner->id,
-        'api_client_id' => $this->client->id, 'code_type' => 'QR', 'code_id' => '#QR-1',
-        'code_value' => 'DOC-1', 'code_image_path' => 'codes/qr-1.svg',
+        'api_client_id' => $this->client->id,
+    ], [
+        ['type' => 'QR', 'code_id' => '#QR-1', 'code_value' => 'DOC-1', 'image_path' => 'codes/qr-1.svg'],
     ]);
 
-    Document::create([
+    documentWithCodes([
         'name' => 'Someone else', 'document_type_id' => $this->type->id, 'owner_id' => $this->owner->id,
-        'code_type' => 'QR', 'code_id' => '#QR-2', 'code_value' => 'DOC-2', 'code_image_path' => 'codes/qr-2.svg',
+    ], [
+        ['type' => 'QR', 'code_id' => '#QR-2', 'code_value' => 'DOC-2', 'image_path' => 'codes/qr-2.svg'],
     ]);
 
     $this->getJson('/api/v1/documents', authed($this->token))
@@ -119,9 +217,10 @@ it('only lists documents the application created', function () {
 });
 
 it('lets a read-all application see every document', function () {
-    Document::create([
+    documentWithCodes([
         'name' => 'Web created', 'document_type_id' => $this->type->id, 'owner_id' => $this->owner->id,
-        'code_type' => 'QR', 'code_id' => '#QR-3', 'code_value' => 'DOC-3', 'code_image_path' => 'codes/qr-3.svg',
+    ], [
+        ['type' => 'QR', 'code_id' => '#QR-3', 'code_value' => 'DOC-3', 'image_path' => 'codes/qr-3.svg'],
     ]);
 
     $this->client->update(['abilities' => ['documents:read', 'documents:read-all']]);
@@ -130,10 +229,11 @@ it('lets a read-all application see every document', function () {
 });
 
 it('resolves a scanned code and can count the scan', function () {
-    $document = Document::create([
+    $document = documentWithCodes([
         'name' => 'Scanned', 'document_type_id' => $this->type->id, 'owner_id' => $this->owner->id,
-        'api_client_id' => $this->client->id, 'code_type' => 'QR', 'code_id' => '#QR-9',
-        'code_value' => 'DOC-9', 'code_image_path' => 'codes/qr-9.svg', 'scan_count' => 0,
+        'api_client_id' => $this->client->id, 'scan_count' => 0,
+    ], [
+        ['type' => 'QR', 'code_id' => '#QR-9', 'code_value' => 'DOC-9', 'image_path' => 'codes/qr-9.svg'],
     ]);
 
     $this->getJson('/api/v1/documents/lookup/DOC-9?record_scan=1', authed($this->token))

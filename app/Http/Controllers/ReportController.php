@@ -40,7 +40,7 @@ class ReportController extends Controller
             });
 
         // ── Document List per Type ─────────────────────────────────────────
-        $documentList = Document::with(['documentType', 'owner'])
+        $documentList = Document::with(['documentType', 'owner', 'codes'])
             ->when($request->dl_type,  fn ($q) => $q->whereHas('documentType', fn ($q2) => $q2->where('name', $request->dl_type)))
             ->when($request->dl_label, fn ($q) => $q->where('name', 'like', "%{$request->dl_label}%"))
             ->when($request->dl_dept,  fn ($q) => $q->where('department', 'like', "%{$request->dl_dept}%"))
@@ -50,9 +50,7 @@ class ReportController extends Controller
             ->paginate(20, ['*'], 'dl_page')
             ->through(fn ($d) => [
                 'id'           => $d->id,
-                'codeType'     => $d->code_type,
-                'codeImage'    => url('storage/' . $d->code_image_path),
-                'codeId'       => $d->code_id,
+                'codes'        => $d->codes->map->toDisplayArray()->all(),
                 'label'        => $d->name,
                 'type'         => $d->documentType->name,
                 'department'   => $d->department ?? '—',
@@ -114,7 +112,7 @@ class ReportController extends Controller
     {
         abort_if(! auth()->user()->hasRole('admin'), 403);
 
-        $rows = Document::with(['documentType', 'owner'])
+        $rows = Document::with(['documentType', 'owner', 'codes'])
             ->when($request->dl_type,  fn ($q) => $q->whereHas('documentType', fn ($q2) => $q2->where('name', $request->dl_type)))
             ->when($request->dl_label, fn ($q) => $q->where('name', 'like', "%{$request->dl_label}%"))
             ->when($request->dl_dept,  fn ($q) => $q->where('department', 'like', "%{$request->dl_dept}%"))
@@ -123,7 +121,8 @@ class ReportController extends Controller
             ->latest()
             ->get()
             ->map(fn ($d) => [
-                $d->code_id,
+                // A document can carry both a QR and a barcode; list every reference.
+                $d->codes->pluck('code_id')->implode(', ') ?: '—',
                 $d->name,
                 $d->documentType->name,
                 $d->department ?? '—',
@@ -141,7 +140,7 @@ class ReportController extends Controller
 
         return view('reports.print', [
             'title'     => 'Document List per Type',
-            'headers'   => ['Code ID', 'Label', 'Document Class', 'Department', 'Added By', 'Document Date'],
+            'headers'   => ['Code IDs', 'Label', 'Document Class', 'Department', 'Added By', 'Document Date'],
             'rows'      => $rows->all(),
             'filters'   => $filters,
             'generated' => now()->format('M d, Y h:i A'),

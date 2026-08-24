@@ -42,18 +42,19 @@ class MetaApiController extends ApiController
             'fields' => DocumentSchema::describe(DocumentSchema::fields()),
             'always' => [
                 [
-                    'key'      => 'code_type',
-                    'label'    => 'Code Type',
-                    'type'     => 'select',
-                    'required' => true,
-                    'options'  => [['value' => 'QR', 'label' => 'QR Code'], ['value' => 'Barcode', 'label' => 'Barcode']],
+                    'key'       => 'code_types',
+                    'label'     => 'Code Types',
+                    'type'      => 'multiselect',
+                    'required'  => true,
+                    'options'   => [['value' => 'QR', 'label' => 'QR Code'], ['value' => 'Barcode', 'label' => 'Barcode']],
+                    'help_text' => 'Send one or both. Both issues a QR and a barcode that share a number, and either one resolves to the document.',
                 ],
                 [
                     'key'       => 'code_value',
                     'label'     => 'Custom Code Value',
                     'type'      => 'text',
                     'required'  => false,
-                    'help_text' => 'Payload to encode. Leave empty to let the DMS generate one.',
+                    'help_text' => 'Payload to encode. Applies to every requested code type. Leave empty to let the DMS generate one.',
                 ],
             ],
         ]);

@@ -6,6 +6,13 @@ import DocumentTable from '@/Components/Dms/DocumentTable';
 import UploadPanel from '@/Components/Dms/UploadPanel';
 import { useConfirm } from '@/Components/Dms/ConfirmDialog';
 import { useResponsive } from '@/hooks/useResponsive';
+import { CodePanel, codeIdList } from '@/Components/Dms/DocumentCodes';
+
+/** A document matches a scan when *either* of its codes matches. */
+const matchesCode = (doc, needle) =>
+    (doc.codes ?? []).some(c =>
+        c.codeId.toLowerCase().includes(needle) ||
+        (c.value ?? '').toLowerCase().includes(needle));
 
 export default function DocumentsIndex({ documents, documentTypes, users = [], roles = [], formFields = [], filters: serverFilters, openDocId }) {
     const { isMobile, isTablet } = useResponsive();
@@ -40,7 +47,7 @@ export default function DocumentsIndex({ documents, documentTypes, users = [], r
     function handleScanEnter(value) {
         const s = value.toLowerCase().trim();
         if (!s) return;
-        const match = documents.find(doc => doc.codeId.toLowerCase().includes(s));
+        const match = documents.find(doc => matchesCode(doc, s));
         setScanPopupDoc(match ?? null);
         if (!match) {
             notify({
@@ -62,7 +69,7 @@ export default function DocumentsIndex({ documents, documentTypes, users = [], r
             && (t === '' || doc.type.toLowerCase().includes(t))
             && (d === '' || doc.department.toLowerCase().includes(d))
             && (o === '' || doc.owner.toLowerCase().includes(o))
-            && (s === '' || doc.codeId.toLowerCase().includes(s));
+            && (s === '' || matchesCode(doc, s));
     });
 
     const stacked = isMobile || isTablet;
@@ -201,7 +208,7 @@ function UploadModal({ documentTypes, users, roles, formFields, onClose }) {
 
 // ── Scan Result Modal ─────────────────────────────────────────────────────────
 function ScanResultModal({ doc, onClose }) {
-    const isQR = doc.codeType === 'QR';
+    const codes = doc.codes ?? [];
     // const { isMobile } = useResponsive();
 
     const handleKey = useCallback(e => { if (e.key === 'Escape') onClose(); }, [onClose]);
@@ -214,11 +221,14 @@ function ScanResultModal({ doc, onClose }) {
         };
     }, [handleKey]);
 
-    function downloadCode() {
-        const a = document.createElement('a');
-        a.href = doc.codeImage;
-        a.download = `${doc.codeId.replace('#', '')}.svg`;
-        a.click();
+    /** Downloads every code on the document, one SVG each. */
+    function downloadCodes() {
+        codes.forEach(code => {
+            const a = document.createElement('a');
+            a.href = code.image;
+            a.download = `${code.codeId.replace('#', '')}.svg`;
+            a.click();
+        });
     }
 
     return (
@@ -228,30 +238,20 @@ function ScanResultModal({ doc, onClose }) {
                 {/* Header */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.9rem 1.25rem', borderBottom: '1px solid #f1f5f9', background: '#fafbff' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span style={{ fontSize: '1.1rem' }}>{isQR ? '⬛' : '▐▌'}</span>
+                        <span style={{ fontSize: '1.1rem' }}>🔎</span>
                         <div>
                             <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.88rem' }}>Scan Result</div>
-                            <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>{isQR ? 'QR Code' : 'Barcode'} match found</div>
+                            <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>
+                                {codes.length > 1 ? `${codes.length} codes on this document` : 'Match found'}
+                            </div>
                         </div>
                     </div>
                     <button onClick={onClose} style={{ background: '#f1f5f9', border: 'none', borderRadius: 8, width: 28, height: 28, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b', fontSize: '0.9rem' }}>✕</button>
                 </div>
 
                 {/* Code image */}
-                <div style={{ background: 'linear-gradient(160deg, #f8fafc 0%, #eef2ff 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '1.5rem 1rem', gap: 12 }}>
-                    <div style={{ background: '#fff', borderRadius: 12, padding: isQR ? 14 : 18, boxShadow: '0 4px 20px rgba(99,102,241,0.12)', border: '1px solid #e2e8f0' }}>
-                        <img
-                            src={doc.codeImage}
-                            alt={isQR ? 'QR Code' : 'Barcode'}
-                            style={isQR
-                                ? { width: 180, height: 180, display: 'block' }
-                                : { width: 220, height: 72, objectFit: 'contain', display: 'block' }
-                            }
-                        />
-                    </div>
-                    <span style={{ fontFamily: 'monospace', fontSize: '0.9rem', fontWeight: 700, color: '#4f46e5', background: '#eef2ff', border: '1px solid #c7d2fe', borderRadius: 6, padding: '0.3rem 0.8rem' }}>
-                        {doc.codeId}
-                    </span>
+                <div style={{ background: 'linear-gradient(160deg, #f8fafc 0%, #eef2ff 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '1.5rem 1rem', gap: 20, maxHeight: '46vh', overflowY: 'auto' }}>
+                    <CodePanel codes={codes} sizes={{ qr: 180, bcW: 220, bcH: 72 }} />
                 </div>
 
                 {/* Doc info */}
@@ -263,8 +263,8 @@ function ScanResultModal({ doc, onClose }) {
 
                 {/* Actions */}
                 <div style={{ display: 'flex', gap: 8, padding: '0 1.25rem 1.25rem' }}>
-                    <button onClick={downloadCode} style={{ flex: 1, padding: '0.55rem', background: '#6366f1', color: '#fff', fontWeight: 600, fontSize: '0.82rem', borderRadius: 8, border: 'none', cursor: 'pointer' }}>
-                        Download {isQR ? 'QR' : 'Barcode'}
+                    <button onClick={downloadCodes} disabled={codes.length === 0} style={{ flex: 1, padding: '0.55rem', background: '#6366f1', color: '#fff', fontWeight: 600, fontSize: '0.82rem', borderRadius: 8, border: 'none', cursor: codes.length ? 'pointer' : 'not-allowed' }}>
+                        {codes.length > 1 ? 'Download Both' : 'Download Code'}
                     </button>
                     <button onClick={onClose} style={{ padding: '0.55rem 1rem', background: '#f8fafc', color: '#475569', fontWeight: 600, fontSize: '0.82rem', borderRadius: 8, border: '1px solid #e2e8f0', cursor: 'pointer' }}>
                         Close

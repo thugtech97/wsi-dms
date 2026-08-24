@@ -433,7 +433,7 @@ function ApiReference({ baseUrl }) {
         ['GET',    '/document-types',        'Valid document_type_id values'],
         ['GET',    '/users',                 'Valid allowed_users values'],
         ['GET',    '/roles',                 'Valid allowed_roles values'],
-        ['POST',   '/documents',             'Create a document and issue its QR / barcode'],
+        ['POST',   '/documents',             'Create a document and issue its QR code, barcode, or both'],
         ['GET',    '/documents',             'List documents this app created (paginated, filterable)'],
         ['GET',    '/documents/{id}',        'Fetch one document'],
         ['GET',    '/documents/lookup/{code}','Resolve a scanned code (?record_scan=1 to count it)'],
@@ -450,7 +450,7 @@ function ApiReference({ baseUrl }) {
     "label": "Purchase Order 2026-118",
     "document_type_id": 1,
     "department": "Procurement",
-    "code_type": "QR"
+    "code_types": ["QR", "Barcode"]
   }'`;
 
     const response = `{
@@ -459,12 +459,21 @@ function ApiReference({ baseUrl }) {
     "id": 42,
     "label": "Purchase Order 2026-118",
     "document_type": { "id": 1, "name": "Purchase Order" },
-    "code": {
-      "type": "QR",
-      "reference": "#QR-48213",
-      "value": "DOC-48213",
-      "image_url": "${baseUrl.replace('/api/v1', '')}/storage/codes/qr-48213.svg"
-    },
+    "codes": [
+      {
+        "type": "QR",
+        "reference": "#QR-48213",
+        "value": "DOC-48213",
+        "image_url": "${baseUrl.replace('/api/v1', '')}/storage/codes/qr-48213.svg"
+      },
+      {
+        "type": "Barcode",
+        "reference": "#BC-48213",
+        "value": "BC-48213",
+        "image_url": "${baseUrl.replace('/api/v1', '')}/storage/codes/bc-48213.svg"
+      }
+    ],
+    "code": { "type": "QR", "reference": "#QR-48213", "value": "DOC-48213", "image_url": "…" },
     "scan_count": 0,
     "created_at": "2026-08-03T09:14:22+08:00"
   }
@@ -477,6 +486,18 @@ function ApiReference({ baseUrl }) {
                 <code style={codeSt}>Authorization: Bearer &lt;token&gt;</code> or <code style={codeSt}>X-Api-Key: &lt;token&gt;</code>.
                 Send <code style={codeSt}>Accept: application/json</code>. Field keys come from Settings → Document Form, so always
                 read <code style={codeSt}>/form-fields</code> rather than hard-coding them.
+            </p>
+
+            <p style={{ fontSize: '0.83rem', color: '#475569', marginBottom: '0.9rem' }}>
+                <strong>Tracking codes.</strong> Send <code style={codeSt}>code_types</code> with{' '}
+                <code style={codeSt}>["QR"]</code>, <code style={codeSt}>["Barcode"]</code>, or both. Asking for both
+                issues two codes that share one number (<code style={codeSt}>#QR-48213</code> and{' '}
+                <code style={codeSt}>#BC-48213</code>), and either one resolves to the same document through{' '}
+                <code style={codeSt}>/documents/lookup/&#123;code&#125;</code>. A custom{' '}
+                <code style={codeSt}>code_value</code> is encoded into every type you asked for. The older
+                single <code style={codeSt}>code_type: "QR"</code> is still accepted, and responses still carry a{' '}
+                <code style={codeSt}>code</code> object holding the first code — but read{' '}
+                <code style={codeSt}>codes</code> instead, it lists them all.
             </p>
 
             <div style={{ overflowX: 'auto' }}>

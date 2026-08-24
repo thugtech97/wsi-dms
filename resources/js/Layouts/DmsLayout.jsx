@@ -302,16 +302,21 @@ function SearchDropdown({ suggestions, onSelect }) {
                     onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
                     onMouseLeave={e => e.currentTarget.style.background = 'none'}
                 >
-                    <img
-                        src={doc.codeImage}
-                        alt={doc.codeType}
-                        style={doc.codeType === 'QR'
-                            ? { width: 32, height: 32, flexShrink: 0 }
-                            : { width: 48, height: 18, objectFit: 'contain', flexShrink: 0 }}
-                    />
+                    {/* One row per document, so show the first code — the QR when it has one. */}
+                    {doc.codes?.[0] && (
+                        <img
+                            src={doc.codes[0].image}
+                            alt={doc.codes[0].type}
+                            style={doc.codes[0].type === 'QR'
+                                ? { width: 32, height: 32, flexShrink: 0 }
+                                : { width: 48, height: 18, objectFit: 'contain', flexShrink: 0 }}
+                        />
+                    )}
                     <div style={{ minWidth: 0 }}>
                         <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.name}</div>
-                        <div style={{ fontSize: '0.7rem', fontFamily: 'monospace', color: '#6366f1', marginTop: 1 }}>{doc.codeId}</div>
+                        <div style={{ fontSize: '0.7rem', fontFamily: 'monospace', color: '#6366f1', marginTop: 1 }}>
+                            {(doc.codes ?? []).map(c => c.codeId).join(' · ')}
+                        </div>
                     </div>
                 </button>
             ))}
