@@ -134,20 +134,35 @@ class DocumentController extends Controller
     }
 
     /**
-     * Opens the document a scanned QR code points at. The QR encodes this URL,
-     * so the phone shows a link; following it lands on the document itself.
+     * Opens the document a scanned QR code points at.
+     *
+     * Whoever scans a printed document is usually holding it and has no DMS
+     * session on their phone, so a signed-out scan gets a public page carrying
+     * the document's own URL rather than a login wall. Signed-in staff go
+     * straight to the record in the DMS.
      */
     public function resolve(string $code)
     {
         $code = DocumentCode::normaliseScanInput($code);
 
-        $match = DocumentCode::where('code_value', $code)
+        $match = DocumentCode::with('document.documentType')
+            ->where('code_value', $code)
             ->orWhere('code_id', $code)
             ->firstOrFail();
 
-        $match->document->increment('scan_count');
+        $document = $match->document;
+        $document->increment('scan_count');
 
-        return redirect()->route('documents.index', ['open' => $match->document_id]);
+        if (auth()->check()) {
+            return redirect()->route('documents.index', ['open' => $document->id]);
+        }
+
+        return response()->view('documents.scan', [
+            'document'    => $document,
+            'code'        => $match,
+            'documentUrl' => $document->link_document_url ?: null,
+            'fileUrl'     => $document->file_path ? url('storage/' . $document->file_path) : null,
+        ]);
     }
 
     public function recordScan(Document $document)
