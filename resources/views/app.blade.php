@@ -6,7 +6,7 @@
 
         <title inertia>{{ config('app.name', 'Laravel') }}</title>
 
-        <link rel="icon" type="image/webp" href="/img/ombudsman-logo.webp">
+        <link rel="icon" type="image/webp" href="{{ asset('img/ombudsman-logo.webp') }}">
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
