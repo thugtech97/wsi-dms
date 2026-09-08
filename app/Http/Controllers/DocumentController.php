@@ -136,10 +136,10 @@ class DocumentController extends Controller
     /**
      * Opens the document a scanned QR code points at.
      *
-     * Whoever scans a printed document is usually holding it and has no DMS
-     * session on their phone, so a signed-out scan gets a public page carrying
-     * the document's own URL rather than a login wall. Signed-in staff go
-     * straight to the record in the DMS.
+     * A scan should end at the document itself, so it redirects straight to the
+     * document's URL — no interstitial. Signed-in staff go to the record in the
+     * DMS instead, and a document with nothing to open falls back to a page
+     * saying so.
      */
     public function resolve(string $code)
     {
@@ -157,18 +157,26 @@ class DocumentController extends Controller
             return redirect()->route('documents.index', ['open' => $document->id]);
         }
 
-        $documentUrl = $document->link_document_url ?: null;
-        $fileUrl     = $document->file_path ? url('storage/' . $document->file_path) : null;
+        $target = $document->link_document_url
+            ?: ($document->file_path ? url('storage/' . $document->file_path) : null);
+
+        if ($target) {
+            return redirect()->away($this->absoluteUrl($target));
+        }
 
         return response()->view('documents.scan', [
-            'document'    => $document,
-            'code'        => $match,
-            'documentUrl' => $documentUrl,
-            'fileUrl'     => $fileUrl,
-            // The page opens this on its own after a short countdown, so a scan
-            // ends at the document itself rather than at a page about it.
-            'autoOpenUrl' => $documentUrl ?: $fileUrl,
+            'document' => $document,
+            'code'     => $match,
         ]);
+    }
+
+    /**
+     * The document URL is stored as free text, so a value saved as
+     * "records.gov.ph/file.pdf" would otherwise redirect back into this site.
+     */
+    private function absoluteUrl(string $url): string
+    {
+        return preg_match('~^[a-z][a-z0-9+.-]*://~i', $url) ? $url : 'https://' . ltrim($url, '/');
     }
 
     public function recordScan(Document $document)
