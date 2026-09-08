@@ -4,10 +4,28 @@
  * scan result — renders it through here so the two stay visually consistent.
  *
  * Every `codes` array is the shape produced by DocumentCode::toDisplayArray():
- *   { id, type: 'QR' | 'Barcode', codeId, value, image }
+ *   { id, type: 'QR' | 'Barcode', codeId, value, image, scanUrl }
  */
 
 export const isQrCode = code => code?.type === 'QR';
+
+/**
+ * What a scanner actually typed, reduced to a code. A QR encodes the document's
+ * scan URL, so phone and handheld scanners hand back the whole URL; a barcode
+ * still arrives as the plain value and passes through untouched.
+ */
+export function normaliseScanInput(input = '') {
+    const value = String(input).trim();
+    if (!/^https?:\/\//i.test(value)) return value;
+
+    try {
+        const path = new URL(value).pathname.replace(/\/+$/, '');
+        const last = path.split('/').filter(Boolean).pop();
+        return last ? decodeURIComponent(last) : value;
+    } catch {
+        return value;
+    }
+}
 
 /** Sizing differs per type: a QR is square, a barcode is a wide strip. */
 export function codeImageStyle(code, { qr = 52, bcW = 76, bcH = 26 } = {}) {
@@ -79,6 +97,15 @@ export function CodePanel({ codes = [], sizes, renderAction, align = 'center' })
                     <div style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 500 }}>
                         {codeGlyph(code)} {codeLabel(code)}
                     </div>
+                    {isQrCode(code) && code.scanUrl && (
+                        <a
+                            href={code.scanUrl}
+                            title={code.scanUrl}
+                            style={{ fontSize: '0.68rem', color: '#6366f1', textDecoration: 'none', wordBreak: 'break-all', maxWidth: 240, textAlign: align === 'center' ? 'center' : 'left' }}
+                        >
+                            🔗 {code.scanUrl}
+                        </a>
+                    )}
                     {renderAction?.(code)}
                 </div>
             ))}

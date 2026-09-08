@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, usePage, router } from '@inertiajs/react';
 import { useResponsive } from '@/hooks/useResponsive';
+import OmbudsmanLogo, { APP_NAME, APP_SUBTITLE } from '@/Components/Dms/OmbudsmanLogo';
 
 const ALL_NAV_ITEMS = [
     { label: 'Dashboard',       icon: <DashboardIcon />, routeName: 'dashboard',            adminOnly: true },
@@ -122,13 +123,17 @@ export default function DmsLayout({ activePage, onScanChange, onSearchEnter, chi
                             <HamburgerIcon />
                         </button>
                     )}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 600, fontSize: isMobile ? '0.85rem' : '1.05rem', color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden' }}>
-                        <FolderTreeIcon />
-                        {isMobile
-                            ? <span>Webfocus DMS</span>
-                            : <span>Webfocus Document Management System</span>
-                        }
-                    </div>
+                    <Link href={route('documents.index')} style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, textDecoration: 'none' }}>
+                        <OmbudsmanLogo size={isMobile ? 30 : 38} />
+                        <div style={{ minWidth: 0, lineHeight: 1.2, overflow: 'hidden' }}>
+                            <div style={{ fontWeight: 700, fontSize: isMobile ? '0.8rem' : '0.98rem', color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {APP_NAME}
+                            </div>
+                            <div style={{ fontSize: isMobile ? '0.62rem' : '0.72rem', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {APP_SUBTITLE}
+                            </div>
+                        </div>
+                    </Link>
                 </div>
 
                 {/* Center: scan search (hidden on mobile) */}
@@ -367,9 +372,6 @@ function SidebarLink({ item, active, badge, showLabel, onNavigate }) {
 // ── Icons ─────────────────────────────────────────────────────────────────────
 function HamburgerIcon() {
     return <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line strokeLinecap="round" x1="3" y1="6" x2="21" y2="6"/><line strokeLinecap="round" x1="3" y1="12" x2="21" y2="12"/><line strokeLinecap="round" x1="3" y1="18" x2="21" y2="18"/></svg>;
-}
-function FolderTreeIcon() {
-    return <svg width="18" height="18" fill="none" stroke="#94a3b8" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>;
 }
 function BarcodeIcon() {
     return <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" d="M4 6v12M8 6v12M12 6v12M16 6v12M20 6v12"/></svg>;

@@ -11,7 +11,7 @@ export default function ForgotPassword({ status }) {
 
     return (
         <DmsGuestLayout title="Reset your password" subtitle="Enter your email and we'll send you a reset link.">
-            <Head title="Forgot Password — Webfocus DMS" />
+            <Head title="Forgot Password — Ombudsman DMS" />
 
             {status && (
                 <div style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 8, padding: '0.65rem 0.9rem', fontSize: '0.82rem', marginBottom: '1.25rem' }}>

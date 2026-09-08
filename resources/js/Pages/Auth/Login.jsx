@@ -15,7 +15,7 @@ export default function Login({ status, canResetPassword }) {
 
     return (
         <DmsGuestLayout title="Welcome back" subtitle="Sign in to your account to continue.">
-            <Head title="Sign In — Webfocus DMS" />
+            <Head title="Sign In — Ombudsman DMS" />
 
             {status && (
                 <div style={alertStyle('#f0fdf4', '#16a34a', '#bbf7d0')}>{status}</div>

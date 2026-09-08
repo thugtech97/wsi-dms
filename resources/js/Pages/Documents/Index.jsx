@@ -6,13 +6,20 @@ import DocumentTable from '@/Components/Dms/DocumentTable';
 import UploadPanel from '@/Components/Dms/UploadPanel';
 import { useConfirm } from '@/Components/Dms/ConfirmDialog';
 import { useResponsive } from '@/hooks/useResponsive';
-import { CodePanel, codeIdList } from '@/Components/Dms/DocumentCodes';
+import { CodePanel, codeIdList, normaliseScanInput } from '@/Components/Dms/DocumentCodes';
 
-/** A document matches a scan when *either* of its codes matches. */
-const matchesCode = (doc, needle) =>
-    (doc.codes ?? []).some(c =>
-        c.codeId.toLowerCase().includes(needle) ||
-        (c.value ?? '').toLowerCase().includes(needle));
+/**
+ * A document matches a scan when *either* of its codes matches. A QR scans as
+ * the document's URL, so reduce that back to the code before comparing.
+ */
+const matchesCode = (doc, needle) => {
+    const code = normaliseScanInput(needle).toLowerCase();
+    if (!code) return false;
+
+    return (doc.codes ?? []).some(c =>
+        c.codeId.toLowerCase().includes(code) ||
+        (c.value ?? '').toLowerCase().includes(code));
+};
 
 export default function DocumentsIndex({ documents, documentTypes, users = [], roles = [], formFields = [], filters: serverFilters, openDocId }) {
     const { isMobile, isTablet } = useResponsive();

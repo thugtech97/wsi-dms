@@ -73,9 +73,7 @@ class DocumentCodeGenerator
 
         $path = 'codes/' . ($isQr ? 'qr' : 'bc') . "-{$slug}.svg";
 
-        Storage::disk('public')->put($path, $isQr
-            ? QrCode::size(150)->generate($codeValue)
-            : (new BarcodeGeneratorSVG)->getBarcode($codeValue, BarcodeGeneratorSVG::TYPE_CODE_128, 2, 50));
+        $this->writeImage($path, $type, $codeValue);
 
         return [
             'type'       => $type,
@@ -83,6 +81,19 @@ class DocumentCodeGenerator
             'code_value' => $codeValue,
             'image_path' => $path,
         ];
+    }
+
+    /**
+     * Writes one code image. A QR encodes the document's scan URL so a phone
+     * camera offers a link to open, while a barcode stays the bare value — a
+     * URL in Code 128 would be unreadably wide, and handheld scanners type it
+     * back into the search box where the plain code is what matches.
+     */
+    public function writeImage(string $path, string $type, string $codeValue): void
+    {
+        Storage::disk('public')->put($path, $type === 'QR'
+            ? QrCode::size(150)->generate(DocumentCode::scanUrlFor($codeValue))
+            : (new BarcodeGeneratorSVG)->getBarcode($codeValue, BarcodeGeneratorSVG::TYPE_CODE_128, 2, 50));
     }
 
     /**

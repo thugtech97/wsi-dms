@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Document;
+use App\Models\DocumentCode;
 use App\Models\DocumentFormField;
 use App\Models\DocumentType;
 use App\Models\User;
@@ -64,7 +65,7 @@ class DocumentController extends Controller
 
     public function search(Request $request)
     {
-        $q = trim($request->get('q', ''));
+        $q = DocumentCode::normaliseScanInput($request->get('q', ''));
         if (strlen($q) < 2) return response()->json([]);
 
         $user    = auth()->user();
@@ -130,6 +131,23 @@ class DocumentController extends Controller
         $document->update(DocumentSchema::payload($fields, $request->all(), $document));
 
         return redirect()->route('documents.index');
+    }
+
+    /**
+     * Opens the document a scanned QR code points at. The QR encodes this URL,
+     * so the phone shows a link; following it lands on the document itself.
+     */
+    public function resolve(string $code)
+    {
+        $code = DocumentCode::normaliseScanInput($code);
+
+        $match = DocumentCode::where('code_value', $code)
+            ->orWhere('code_id', $code)
+            ->firstOrFail();
+
+        $match->document->increment('scan_count');
+
+        return redirect()->route('documents.index', ['open' => $match->document_id]);
     }
 
     public function recordScan(Document $document)

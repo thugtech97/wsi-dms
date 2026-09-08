@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { router, useForm } from '@inertiajs/react';
 import Badge from './Badge';
 import DynamicFormFields, {
@@ -20,9 +20,26 @@ import {
 const TH = { fontWeight: 600, textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.5px', color: '#64748b', padding: '0.85rem 1.25rem', borderBottom: '2px solid #f1f5f9', background: '#f8fafc' };
 const TD = { padding: '1rem 1.25rem', borderBottom: '1px solid #f1f5f9', fontSize: '0.85rem', color: '#334155' };
 
+const PAGE_SIZES = [10, 25, 50, 100];
+
 export default function DocumentTable({ documents, documentTypes = [], users = [], roles = [], formFields = [] }) {
     const [selected, setSelected] = useState(null);
+    const [page, setPage]         = useState(1);
+    const [perPage, setPerPage]   = useState(PAGE_SIZES[0]);
     const { isMobile, isTablet } = useResponsive();
+
+    const total      = documents.length;
+    const pageCount  = Math.max(1, Math.ceil(total / perPage));
+    // Filtering upstream can shrink the list under the current page.
+    const current    = Math.min(page, pageCount);
+    const firstIndex = (current - 1) * perPage;
+    const pageDocs   = useMemo(
+        () => documents.slice(firstIndex, firstIndex + perPage),
+        [documents, firstIndex, perPage],
+    );
+
+    // Snap back to the first page whenever the filtered set changes.
+    useEffect(() => { setPage(1); }, [total]);
 
     return (
         <>
@@ -32,7 +49,7 @@ export default function DocumentTable({ documents, documentTypes = [], users = [
                         <ListIcon /> Document Index
                     </span>
                     <span style={{ background: '#f1f5f9', color: '#334155', fontWeight: 500, padding: '0.25rem 0.6rem', borderRadius: 4, fontSize: '0.8rem' }}>
-                        {documents.length} {documents.length === 1 ? 'item' : 'items'}
+                        {total} {total === 1 ? 'item' : 'items'}
                     </span>
                 </div>
 
@@ -53,18 +70,32 @@ export default function DocumentTable({ documents, documentTypes = [], users = [
                             </tr>
                         </thead>
                         <tbody>
-                            {documents.length === 0 ? (
+                            {total === 0 ? (
                                 <tr>
                                     <td colSpan={isMobile ? 3 : 6} style={{ ...TD, textAlign: 'center', color: '#94a3b8', padding: '2.5rem' }}>
                                         No documents found.
                                     </td>
                                 </tr>
-                            ) : documents.map((doc, i) => (
+                            ) : pageDocs.map((doc, i) => (
                                 <DocumentRow key={doc.id ?? i} doc={doc} onView={() => setSelected(doc)} isMobile={isMobile} isTablet={isTablet} />
                             ))}
                         </tbody>
                     </table>
                 </div>
+
+                {total > 0 && (
+                    <Pagination
+                        page={current}
+                        pageCount={pageCount}
+                        perPage={perPage}
+                        total={total}
+                        firstIndex={firstIndex}
+                        shown={pageDocs.length}
+                        isMobile={isMobile}
+                        onPage={setPage}
+                        onPerPage={size => { setPerPage(size); setPage(1); }}
+                    />
+                )}
             </div>
 
             {selected && (
@@ -79,6 +110,90 @@ export default function DocumentTable({ documents, documentTypes = [], users = [
             )}
         </>
     );
+}
+
+// ── Pagination ────────────────────────────────────────────────────────────────
+/**
+ * Pages the already-filtered list client side, so the instant filtering and the
+ * scan lookup keep working on the whole set while the table renders a slice.
+ */
+function Pagination({ page, pageCount, perPage, total, firstIndex, shown, isMobile, onPage, onPerPage }) {
+    const from = total === 0 ? 0 : firstIndex + 1;
+    const to   = firstIndex + shown;
+
+    return (
+        <div style={{
+            display: 'flex', flexWrap: 'wrap', gap: 12,
+            alignItems: 'center', justifyContent: 'space-between',
+            padding: isMobile ? '0.75rem 0.9rem' : '0.85rem 1.25rem',
+            borderTop: '1px solid #f1f5f9', background: '#fafbfc',
+        }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '0.78rem', color: '#64748b' }}>
+                <span>
+                    Showing <strong style={{ color: '#334155' }}>{from}–{to}</strong> of{' '}
+                    <strong style={{ color: '#334155' }}>{total}</strong>
+                </span>
+                {!isMobile && (
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span>Rows</span>
+                        <select
+                            value={perPage}
+                            onChange={e => onPerPage(Number(e.target.value))}
+                            style={{ border: '1px solid #e2e8f0', borderRadius: 6, padding: '0.2rem 0.4rem', fontSize: '0.78rem', color: '#334155', background: '#fff', cursor: 'pointer' }}
+                        >
+                            {PAGE_SIZES.map(size => <option key={size} value={size}>{size}</option>)}
+                        </select>
+                    </label>
+                )}
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <PageButton label="‹" title="Previous page" disabled={page === 1} onClick={() => onPage(page - 1)} />
+                {pageNumbers(page, pageCount).map((p, i) =>
+                    p === '…'
+                        ? <span key={`gap-${i}`} style={{ padding: '0 4px', color: '#cbd5e1', fontSize: '0.78rem' }}>…</span>
+                        : <PageButton key={p} label={p} active={p === page} onClick={() => onPage(p)} />
+                )}
+                <PageButton label="›" title="Next page" disabled={page === pageCount} onClick={() => onPage(page + 1)} />
+            </div>
+        </div>
+    );
+}
+
+function PageButton({ label, title, active = false, disabled = false, onClick }) {
+    return (
+        <button
+            type="button"
+            title={title}
+            disabled={disabled}
+            onClick={onClick}
+            style={{
+                minWidth: 30, height: 30, padding: '0 7px',
+                borderRadius: 6, fontSize: '0.78rem', fontWeight: active ? 700 : 500,
+                border: `1px solid ${active ? '#6366f1' : '#e2e8f0'}`,
+                background: active ? '#6366f1' : '#fff',
+                color: active ? '#fff' : (disabled ? '#cbd5e1' : '#475569'),
+                cursor: disabled ? 'not-allowed' : 'pointer',
+                transition: 'background 0.15s, color 0.15s',
+            }}
+        >
+            {label}
+        </button>
+    );
+}
+
+/** 1 … 4 [5] 6 … 12 — always the ends, plus a window around the current page. */
+function pageNumbers(page, pageCount) {
+    if (pageCount <= 7) return Array.from({ length: pageCount }, (_, i) => i + 1);
+
+    const pages = new Set([1, pageCount, page, page - 1, page + 1]);
+    if (page <= 3)              [2, 3, 4].forEach(p => pages.add(p));
+    if (page >= pageCount - 2)  [pageCount - 3, pageCount - 2, pageCount - 1].forEach(p => pages.add(p));
+
+    const sorted = [...pages].filter(p => p >= 1 && p <= pageCount).sort((a, b) => a - b);
+
+    return sorted.flatMap((p, i) =>
+        i > 0 && p - sorted[i - 1] > 1 ? ['…', p] : [p]);
 }
 
 function DocumentRow({ doc, onView, isMobile }) {
@@ -169,6 +284,7 @@ function DocumentViewModal({ doc, documentTypes, users, roles, formFields = [], 
             <div class="label">${doc.label}</div>
             <div class="img-wrap"><img src="${code.image}" /></div>
             <div class="code">${code.codeId}</div>
+            ${isQrCode(code) && code.scanUrl ? `<div class="scan-url">${code.scanUrl}</div>` : ''}
             <div class="meta">
                 <div><strong>Document Class:</strong> ${doc.type}</div>
                 <div><strong>Department:</strong> ${doc.department}</div>
@@ -192,6 +308,7 @@ function DocumentViewModal({ doc, documentTypes, users, roles, formFields = [], 
             .qr img { width:180px; height:180px; }
             .bc img { width:220px; height:68px; object-fit:contain; }
             .code { font-family:monospace; font-size:0.9rem; font-weight:700; color:#4f46e5; background:#eef2ff; border:1px solid #c7d2fe; border-radius:6px; padding:4px 14px; display:inline-block; margin-bottom:16px; letter-spacing:0.5px; }
+            .scan-url { font-size:0.68rem; color:#94a3b8; word-break:break-all; margin:-10px 0 14px; }
             .meta { font-size:0.78rem; color:#64748b; line-height:1.8; }
             .meta strong { color:#334155; }
             @media print { body { min-height:unset; padding:0; gap:0; } .card { border:none; } }

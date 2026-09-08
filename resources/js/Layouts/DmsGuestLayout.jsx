@@ -1,4 +1,5 @@
 import { useResponsive } from '@/hooks/useResponsive';
+import OmbudsmanLogo, { APP_NAME, APP_SUBTITLE } from '@/Components/Dms/OmbudsmanLogo';
 
 export default function DmsGuestLayout({ children, title, subtitle }) {
     const { isMobile } = useResponsive();
@@ -22,42 +23,24 @@ export default function DmsGuestLayout({ children, title, subtitle }) {
                     {/* Logo + title */}
                     <div style={{ marginBottom: '2.25rem', position: 'relative' }}>
                         <div style={{
-                            background: 'rgba(255,255,255,0.12)', borderRadius: 14,
-                            width: 56, height: 56, display: 'flex', alignItems: 'center',
+                            background: 'rgba(255,255,255,0.95)', borderRadius: '50%',
+                            width: 92, height: 92, display: 'flex', alignItems: 'center',
                             justifyContent: 'center', marginBottom: '1.5rem',
-                            border: '1px solid rgba(255,255,255,0.15)',
+                            border: '1px solid rgba(255,255,255,0.35)',
+                            boxShadow: '0 8px 28px rgba(15,23,42,0.28)',
                         }}>
-                            <FolderTreeIcon />
+                            <OmbudsmanLogo size={72} />
                         </div>
                         <h1 style={{ fontSize: '1.45rem', fontWeight: 700, lineHeight: 1.35, marginBottom: '0.6rem', letterSpacing: '-0.01em' }}>
-                            Webfocus<br />Document Management<br />System
+                            Office of the<br />Ombudsman<br />Document Management System
                         </h1>
                         <p style={{ color: 'rgba(199,210,254,0.75)', fontSize: '0.875rem' }}>
                             Secure. Organized. Accessible.
                         </p>
                     </div>
 
-                    {/* Feature bullets */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem', position: 'relative' }}>
-                        {FEATURES.map((f, i) => (
-                            <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.85rem' }}>
-                                <div style={{
-                                    background: 'rgba(255,255,255,0.1)', borderRadius: 8,
-                                    width: 32, height: 32, display: 'flex', alignItems: 'center',
-                                    justifyContent: 'center', flexShrink: 0,
-                                }}>
-                                    {f.icon}
-                                </div>
-                                <div>
-                                    <p style={{ fontWeight: 600, fontSize: '0.82rem', marginBottom: 2 }}>{f.title}</p>
-                                    <p style={{ color: 'rgba(199,210,254,0.7)', fontSize: '0.78rem', lineHeight: 1.5 }}>{f.desc}</p>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-
                     <p style={{ position: 'absolute', bottom: '1.5rem', left: '3.5rem', fontSize: '0.7rem', color: 'rgba(199,210,254,0.35)' }}>
-                        © 2026 Webfocus Inc. All rights reserved.
+                        © 2026 Office of the Ombudsman. All rights reserved.
                     </p>
                 </div>
             )}
@@ -74,15 +57,9 @@ export default function DmsGuestLayout({ children, title, subtitle }) {
                     {/* Mobile: show mini branding at top */}
                     {isMobile && (
                         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                            <div style={{
-                                background: '#eef2ff', borderRadius: 12, width: 48, height: 48,
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                margin: '0 auto 0.75rem',
-                            }}>
-                                <FolderTreeIconIndigo />
-                            </div>
-                            <p style={{ fontWeight: 700, fontSize: '0.9rem', color: '#0f172a' }}>Webfocus DMS</p>
-                            <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: 2 }}>Document Management System</p>
+                            <OmbudsmanLogo size={64} style={{ margin: '0 auto 0.75rem' }} />
+                            <p style={{ fontWeight: 700, fontSize: '0.9rem', color: '#0f172a' }}>{APP_NAME}</p>
+                            <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: 2 }}>{APP_SUBTITLE}</p>
                         </div>
                     )}
 
@@ -102,24 +79,3 @@ export default function DmsGuestLayout({ children, title, subtitle }) {
     );
 }
 
-const FEATURES = [
-    { icon: <ShieldIcon />, title: 'Role-Based Access Control',  desc: 'Separate admin and user permissions keep your data safe.' },
-    { icon: <QrIcon />,     title: 'QR & Barcode Tracking',     desc: 'Every document gets a unique scannable tracking code.' },
-    { icon: <SearchIcon />, title: 'Instant Scan Search',        desc: 'Locate any file in seconds by scanning its code.' },
-];
-
-function FolderTreeIcon() {
-    return <svg width="26" height="26" fill="none" stroke="rgba(199,210,254,0.9)" strokeWidth="1.6" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>;
-}
-function FolderTreeIconIndigo() {
-    return <svg width="22" height="22" fill="none" stroke="#6366f1" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>;
-}
-function ShieldIcon() {
-    return <svg width="16" height="16" fill="none" stroke="rgba(199,210,254,0.85)" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>;
-}
-function QrIcon() {
-    return <svg width="16" height="16" fill="none" stroke="rgba(199,210,254,0.85)" strokeWidth="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path strokeLinecap="round" d="M14 14h2v2h-2zM18 14h3M14 18v3M18 18h3v3h-3z"/></svg>;
-}
-function SearchIcon() {
-    return <svg width="16" height="16" fill="none" stroke="rgba(199,210,254,0.85)" strokeWidth="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path strokeLinecap="round" d="M21 21l-4.35-4.35"/></svg>;
-}

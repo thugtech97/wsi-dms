@@ -17,8 +17,8 @@ export default function Register() {
     }
 
     return (
-        <DmsGuestLayout title="Create an account" subtitle="Join Webfocus DMS to manage your documents.">
-            <Head title="Register — Webfocus DMS" />
+        <DmsGuestLayout title="Create an account" subtitle="Join the Ombudsman DMS to manage your documents.">
+            <Head title="Register — Ombudsman DMS" />
 
             <form onSubmit={submit}>
                 <Field label="Full Name" error={errors.name}>

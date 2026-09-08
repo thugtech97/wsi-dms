@@ -18,7 +18,7 @@ export default function ResetPassword({ token, email }) {
 
     return (
         <DmsGuestLayout title="Set a new password" subtitle="Choose a strong password for your account.">
-            <Head title="Reset Password — Webfocus DMS" />
+            <Head title="Reset Password — Ombudsman DMS" />
 
             <form onSubmit={submit}>
                 <Field label="Email Address" error={errors.email}>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $title }} — Webfocus DMS</title>
+    <title>{{ $title }} — Ombudsman DMS</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -30,11 +30,11 @@
             gap: 10px;
         }
         .brand-logo {
-            width: 36px; height: 36px;
-            background: #6366f1;
-            border-radius: 8px;
-            display: flex; align-items: center; justify-content: center;
-            color: #fff; font-weight: 700; font-size: 14px;
+            width: 42px; height: 42px;
+            object-fit: contain;
+            /* Keep the seal in the printed header, not just on screen. */
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
         }
         .brand-name { font-size: 13px; font-weight: 700; color: #0f172a; line-height: 1.2; }
         .brand-sub  { font-size: 10px; color: #64748b; margin-top: 1px; }
@@ -160,9 +160,9 @@
     {{-- Header --}}
     <div class="print-header">
         <div class="brand">
-            <div class="brand-logo">DMS</div>
+            <img class="brand-logo" src="{{ asset('img/ombudsman-logo.webp') }}" alt="Office of the Ombudsman seal">
             <div>
-                <div class="brand-name">Webfocus Document Management System</div>
+                <div class="brand-name">Office of the Ombudsman<br><span style="font-weight:500">Document Management System</span></div>
                 <div class="brand-sub">Administrative Report · Confidential</div>
             </div>
         </div>
@@ -216,7 +216,7 @@
 
     {{-- Footer --}}
     <div class="print-footer">
-        <span>Webfocus Document Management System &mdash; {{ $title }}</span>
+        <span>Office of the Ombudsman - Document Management System &mdash; {{ $title }}</span>
         <span>Generated {{ $generated }} &bull; {{ $total }} record(s) &bull; Admin Report</span>
     </div>
 

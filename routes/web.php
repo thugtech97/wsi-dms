@@ -18,6 +18,16 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
+/*
+ * Where a scanned QR code lands. The QR encodes this URL, so a phone camera
+ * offers a link to the document instead of showing the bare tracking number.
+ * Public on purpose — auth still guards the page it forwards to, so an
+ * unauthenticated scan goes through login and arrives at the same document.
+ */
+Route::get('/d/{code}', [DocumentController::class, 'resolve'])
+    ->where('code', '.*')
+    ->name('documents.resolve');
+
 Route::middleware(['auth', 'verified'])->group(function () {
     // Dashboard (admin only)
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
