@@ -157,11 +157,17 @@ class DocumentController extends Controller
             return redirect()->route('documents.index', ['open' => $document->id]);
         }
 
+        $documentUrl = $document->link_document_url ?: null;
+        $fileUrl     = $document->file_path ? url('storage/' . $document->file_path) : null;
+
         return response()->view('documents.scan', [
             'document'    => $document,
             'code'        => $match,
-            'documentUrl' => $document->link_document_url ?: null,
-            'fileUrl'     => $document->file_path ? url('storage/' . $document->file_path) : null,
+            'documentUrl' => $documentUrl,
+            'fileUrl'     => $fileUrl,
+            // The page opens this on its own after a short countdown, so a scan
+            // ends at the document itself rather than at a page about it.
+            'autoOpenUrl' => $documentUrl ?: $fileUrl,
         ]);
     }
 

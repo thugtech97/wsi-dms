@@ -73,6 +73,19 @@
             font-size: 12.5px; color: #92400e; line-height: 1.55;
         }
 
+        .countdown {
+            margin-top: 14px; padding: 11px 13px;
+            background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 9px;
+            font-size: 12.5px; color: #4338ca; line-height: 1.5;
+            display: flex; align-items: center; justify-content: space-between; gap: 12px;
+        }
+        .countdown strong { font-variant-numeric: tabular-nums; }
+        .countdown button {
+            background: #fff; border: 1px solid #c7d2fe; border-radius: 7px;
+            padding: 5px 11px; font-size: 12px; font-weight: 600; color: #4f46e5;
+            cursor: pointer; flex-shrink: 0; font-family: inherit;
+        }
+
         .foot { margin-top: 16px; text-align: center; font-size: 11px; color: #94a3b8; line-height: 1.6; }
     </style>
 </head>
@@ -111,6 +124,13 @@
                     </div>
                 </dl>
 
+                @if ($autoOpenUrl)
+                    <div class="countdown" id="countdown" hidden>
+                        <span>Opening the document in <strong id="countdown-seconds">3</strong>s…</span>
+                        <button type="button" id="countdown-cancel">Stay here</button>
+                    </div>
+                @endif
+
                 <div class="actions">
                     @if ($documentUrl)
                         <a class="btn btn-primary" href="{{ $documentUrl }}" rel="noopener">Open Document</a>
@@ -141,5 +161,36 @@
             Scanned {{ now()->format('M d, Y h:i A') }}
         </p>
     </div>
+
+    @if ($autoOpenUrl)
+        <script>
+            (function () {
+                var url    = @json($autoOpenUrl);
+                var box    = document.getElementById('countdown');
+                var digits = document.getElementById('countdown-seconds');
+                var cancel = document.getElementById('countdown-cancel');
+                var left   = 3;
+
+                box.hidden = false;
+
+                var tick = setInterval(function () {
+                    left -= 1;
+                    if (left > 0) {
+                        digits.textContent = left;
+                        return;
+                    }
+                    clearInterval(tick);
+                    // replace(), not assign() — going back should return to the
+                    // scanner, not to a page that immediately redirects again.
+                    window.location.replace(url);
+                }, 1000);
+
+                cancel.addEventListener('click', function () {
+                    clearInterval(tick);
+                    box.hidden = true;
+                });
+            })();
+        </script>
+    @endif
 </body>
 </html>
