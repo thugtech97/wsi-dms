@@ -1,5 +1,6 @@
 import { useResponsive } from '@/hooks/useResponsive';
-import OmbudsmanLogo, { APP_NAME, APP_SUBTITLE } from '@/Components/Dms/OmbudsmanLogo';
+import { APP_NAME, APP_SUBTITLE } from '@/Components/Dms/OmbudsmanLogo';
+import AuthBanner from '@/Components/Dms/AuthBanner';
 
 export default function DmsGuestLayout({ children, title, subtitle }) {
     const { isMobile } = useResponsive();
@@ -22,15 +23,7 @@ export default function DmsGuestLayout({ children, title, subtitle }) {
 
                     {/* Logo + title */}
                     <div style={{ marginBottom: '2.25rem', position: 'relative' }}>
-                        <div style={{
-                            background: 'rgba(255,255,255,0.95)', borderRadius: '50%',
-                            width: 92, height: 92, display: 'flex', alignItems: 'center',
-                            justifyContent: 'center', marginBottom: '1.5rem',
-                            border: '1px solid rgba(255,255,255,0.35)',
-                            boxShadow: '0 8px 28px rgba(15,23,42,0.28)',
-                        }}>
-                            <OmbudsmanLogo size={72} />
-                        </div>
+                        <AuthBanner style={{ marginBottom: '1.5rem' }} />
                         <h1 style={{ fontSize: '1.45rem', fontWeight: 700, lineHeight: 1.35, marginBottom: '0.6rem', letterSpacing: '-0.01em' }}>
                             Office of the<br />Ombudsman<br />Document Management System
                         </h1>
@@ -57,7 +50,7 @@ export default function DmsGuestLayout({ children, title, subtitle }) {
                     {/* Mobile: show mini branding at top */}
                     {isMobile && (
                         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                            <OmbudsmanLogo size={64} style={{ margin: '0 auto 0.75rem' }} />
+                            <AuthBanner style={{ marginBottom: '0.9rem', boxShadow: '0 2px 10px rgba(15,23,42,0.10)', border: '1px solid #e2e8f0' }} />
                             <p style={{ fontWeight: 700, fontSize: '0.9rem', color: '#0f172a' }}>{APP_NAME}</p>
                             <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: 2 }}>{APP_SUBTITLE}</p>
                         </div>
