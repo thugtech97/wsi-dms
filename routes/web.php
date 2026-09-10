@@ -19,10 +19,10 @@ Route::get('/', function () {
 });
 
 /*
- * Where a scanned QR code lands. The QR encodes this URL, so a phone camera
- * offers a link to the document instead of showing the bare tracking number.
- * Public on purpose — auth still guards the page it forwards to, so an
- * unauthenticated scan goes through login and arrives at the same document.
+ * Where a scanned code resolves. The code images encode the bare tracking
+ * number, so this is reached by a scanner typing that number in and by QR
+ * labels printed while the images encoded this URL. Public on purpose — a
+ * signed-out reader gets a page about the document, not a login wall.
  */
 Route::get('/d/{code}', [DocumentController::class, 'resolve'])
     ->where('code', '.*')

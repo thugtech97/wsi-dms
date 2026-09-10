@@ -1,7 +1,7 @@
 {{--
-    Where a scanned code lands when the document has no URL and no file on
-    record. Anything with somewhere to go is redirected straight there, so this
-    page exists only to say the scan worked but there is nothing to open.
+    Where a signed-out scan lands. It shows the document's code and details and
+    offers its URL and attached file as links rather than forwarding to them —
+    a scan ends here, not on an external site the reader never chose to open.
 --}}
 <!DOCTYPE html>
 <html lang="en">
@@ -23,10 +23,10 @@
 
         .brand {
             display: flex; align-items: center; gap: 10px;
-            margin-bottom: 16px; justify-content: center;
+            margin-bottom: 16px; justify-content: center; text-align: center;
         }
         .brand img { width: 42px; height: 42px; object-fit: contain; flex-shrink: 0; }
-        .brand-name { font-size: 13px; font-weight: 700; color: #0f172a; line-height: 1.25; }
+        .brand-name { font-size: 13px; font-weight: 700; color: #0f172a; line-height: 1.25; text-align: left; }
         .brand-sub  { font-size: 11px; color: #64748b; }
 
         .card {
@@ -54,17 +54,28 @@
         .meta-row dt { color: #94a3b8; flex-shrink: 0; }
         .meta-row dd { color: #334155; font-weight: 500; text-align: right; word-break: break-word; }
 
-        .notice {
+        .actions { margin-top: 18px; display: flex; flex-direction: column; gap: 9px; }
+        .btn {
+            display: block; width: 100%; padding: 12px 16px;
+            border-radius: 9px; font-size: 14px; font-weight: 600;
+            text-align: center; text-decoration: none; border: 1px solid transparent;
+        }
+        .btn-primary   { background: #6366f1; color: #fff; }
+        .btn-secondary { background: #fff; color: #4f46e5; border-color: #c7d2fe; }
+        .btn-quiet     { background: #f8fafc; color: #475569; border-color: #e2e8f0; }
+
+        .url-note {
+            margin-top: 14px; padding: 11px 13px;
+            background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 9px;
+            font-size: 11px; color: #64748b; line-height: 1.6; word-break: break-all;
+        }
+        .url-note span { display: block; color: #94a3b8; margin-bottom: 3px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; font-size: 10px; }
+        .url-note a { color: #4f46e5; text-decoration: none; }
+
+        .empty {
             margin-top: 16px; padding: 13px;
             background: #fffbeb; border: 1px solid #fde68a; border-radius: 9px;
             font-size: 12.5px; color: #92400e; line-height: 1.55;
-        }
-
-        .btn {
-            display: block; width: 100%; margin-top: 16px; padding: 12px 16px;
-            border-radius: 9px; font-size: 14px; font-weight: 600;
-            text-align: center; text-decoration: none;
-            background: #6366f1; color: #fff; border: 1px solid transparent;
         }
 
         .foot { margin-top: 16px; text-align: center; font-size: 11px; color: #94a3b8; line-height: 1.6; }
@@ -105,12 +116,28 @@
                     </div>
                 </dl>
 
-                <div class="notice">
-                    This document has no URL or attached file on record, so there is nothing to open yet.
-                    Sign in to the DMS to view its full details.
+                <div class="actions">
+                    @if ($documentUrl)
+                        <a class="btn btn-primary" href="{{ $documentUrl }}" rel="noopener">Open Document</a>
+                    @endif
+
+                    @if ($fileUrl)
+                        <a class="btn {{ $documentUrl ? 'btn-secondary' : 'btn-primary' }}" href="{{ $fileUrl }}" rel="noopener">Open Attached File</a>
+                    @endif
+
+                    <a class="btn btn-quiet" href="{{ route('login') }}">Sign in to the DMS</a>
                 </div>
 
-                <a class="btn" href="{{ route('login') }}">Sign in to the DMS</a>
+                @if ($documentUrl)
+                    <div class="url-note">
+                        <span>Document URL</span>
+                        <a href="{{ $documentUrl }}" rel="noopener">{{ $documentUrl }}</a>
+                    </div>
+                @elseif (! $fileUrl)
+                    <div class="empty">
+                        This document has no URL or attached file on record. Sign in to the DMS to view its full details.
+                    </div>
+                @endif
             </div>
         </div>
 

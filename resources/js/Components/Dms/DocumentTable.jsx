@@ -284,7 +284,6 @@ function DocumentViewModal({ doc, documentTypes, users, roles, formFields = [], 
             <div class="label">${doc.label}</div>
             <div class="img-wrap"><img src="${code.image}" /></div>
             <div class="code">${code.codeId}</div>
-            ${isQrCode(code) && code.scanUrl ? `<div class="scan-url">${code.scanUrl}</div>` : ''}
             <div class="meta">
                 <div><strong>Document Class:</strong> ${doc.type}</div>
                 <div><strong>Department:</strong> ${doc.department}</div>
@@ -308,7 +307,6 @@ function DocumentViewModal({ doc, documentTypes, users, roles, formFields = [], 
             .qr img { width:180px; height:180px; }
             .bc img { width:220px; height:68px; object-fit:contain; }
             .code { font-family:monospace; font-size:0.9rem; font-weight:700; color:#4f46e5; background:#eef2ff; border:1px solid #c7d2fe; border-radius:6px; padding:4px 14px; display:inline-block; margin-bottom:16px; letter-spacing:0.5px; }
-            .scan-url { font-size:0.68rem; color:#94a3b8; word-break:break-all; margin:-10px 0 14px; }
             .meta { font-size:0.78rem; color:#64748b; line-height:1.8; }
             .meta strong { color:#334155; }
             @media print { body { min-height:unset; padding:0; gap:0; } .card { border:none; } }

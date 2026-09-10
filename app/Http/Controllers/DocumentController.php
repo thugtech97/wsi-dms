@@ -134,12 +134,15 @@ class DocumentController extends Controller
     }
 
     /**
-     * Opens the document a scanned QR code points at.
+     * Opens the document a scanned code points at.
      *
-     * A scan should end at the document itself, so it redirects straight to the
-     * document's URL — no interstitial. Signed-in staff go to the record in the
-     * DMS instead, and a document with nothing to open falls back to a page
-     * saying so.
+     * A scan ends on a page about the document, not on the document's own URL:
+     * forwarding a reader to an external site they never chose to open is the
+     * behaviour this replaces. The page offers that URL as a link instead.
+     * Signed-in staff still go straight to the record in the DMS.
+     *
+     * Reached by handheld scanners typing the code into the search box, and by
+     * QR labels printed while the images encoded this URL.
      */
     public function resolve(string $code)
     {
@@ -157,22 +160,19 @@ class DocumentController extends Controller
             return redirect()->route('documents.index', ['open' => $document->id]);
         }
 
-        $target = $document->link_document_url
-            ?: ($document->file_path ? url('storage/' . $document->file_path) : null);
-
-        if ($target) {
-            return redirect()->away($this->absoluteUrl($target));
-        }
-
         return response()->view('documents.scan', [
-            'document' => $document,
-            'code'     => $match,
+            'document'    => $document,
+            'code'        => $match,
+            'documentUrl' => $document->link_document_url
+                ? $this->absoluteUrl($document->link_document_url)
+                : null,
+            'fileUrl'     => $document->file_path ? url('storage/' . $document->file_path) : null,
         ]);
     }
 
     /**
      * The document URL is stored as free text, so a value saved as
-     * "records.gov.ph/file.pdf" would otherwise redirect back into this site.
+     * "records.gov.ph/file.pdf" would otherwise link back into this site.
      */
     private function absoluteUrl(string $url): string
     {

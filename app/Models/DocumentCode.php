@@ -37,9 +37,9 @@ class DocumentCode extends Model
     }
 
     /**
-     * Where this code points. A QR encodes this URL rather than the bare
-     * number, so scanning it with a phone camera offers the document to open
-     * instead of showing "DOC-12345" as meaningless text.
+     * Where a scan of this code resolves. The images encode the bare number,
+     * not this URL, but the public /d/{code} route stays open so QR labels
+     * printed while it was encoded still reach their document.
      */
     public function scanUrl(): string
     {
@@ -52,9 +52,10 @@ class DocumentCode extends Model
     }
 
     /**
-     * What a scanner actually typed, reduced to a code. Phone and handheld
-     * scanners read a QR as the full scan URL, so take the last path segment;
-     * a barcode still arrives as the plain value and passes through untouched.
+     * What a scanner actually typed, reduced to a code. Codes arrive as their
+     * plain value and pass through untouched; a QR label printed while the
+     * images encoded the scan URL still reads back as one, so a URL is reduced
+     * to its last path segment.
      */
     public static function normaliseScanInput(string $input): string
     {
@@ -78,7 +79,6 @@ class DocumentCode extends Model
             'codeId'  => $this->code_id,
             'value'   => $this->code_value,
             'image'   => $this->imageUrl(),
-            'scanUrl' => $this->scanUrl(),
         ];
     }
 }

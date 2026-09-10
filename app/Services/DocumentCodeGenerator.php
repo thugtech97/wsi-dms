@@ -84,15 +84,15 @@ class DocumentCodeGenerator
     }
 
     /**
-     * Writes one code image. A QR encodes the document's scan URL so a phone
-     * camera offers a link to open, while a barcode stays the bare value — a
-     * URL in Code 128 would be unreadably wide, and handheld scanners type it
-     * back into the search box where the plain code is what matches.
+     * Writes one code image. Both types encode the bare tracking number, so a
+     * scan hands back the code itself — what the search box matches and what
+     * staff read off the label. QR images printed while they encoded the scan
+     * URL still resolve; see DocumentCode::normaliseScanInput().
      */
     public function writeImage(string $path, string $type, string $codeValue): void
     {
         Storage::disk('public')->put($path, $type === 'QR'
-            ? QrCode::size(150)->generate(DocumentCode::scanUrlFor($codeValue))
+            ? QrCode::size(150)->generate($codeValue)
             : (new BarcodeGeneratorSVG)->getBarcode($codeValue, BarcodeGeneratorSVG::TYPE_CODE_128, 2, 50));
     }
 
