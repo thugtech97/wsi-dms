@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use Spatie\Permission\Models\Role;
 
 test('login screen can be rendered', function () {
     $response = $this->get('/login');
@@ -8,8 +9,9 @@ test('login screen can be rendered', function () {
     $response->assertStatus(200);
 });
 
-test('users can authenticate using the login screen', function () {
+test('an admin lands on the dashboard', function () {
     $user = User::factory()->create();
+    $user->assignRole(Role::create(['name' => 'admin']));
 
     $response = $this->post('/login', [
         'email' => $user->email,
@@ -18,6 +20,21 @@ test('users can authenticate using the login screen', function () {
 
     $this->assertAuthenticated();
     $response->assertRedirect(route('dashboard', absolute: false));
+});
+
+// The dashboard is admin-only and aborts 403, so every other role starts on
+// the documents list instead.
+test('a non-admin lands on the documents list', function () {
+    $user = User::factory()->create();
+    $user->assignRole(Role::create(['name' => 'user']));
+
+    $response = $this->post('/login', [
+        'email' => $user->email,
+        'password' => 'password',
+    ]);
+
+    $this->assertAuthenticated();
+    $response->assertRedirect(route('documents.index', absolute: false));
 });
 
 test('users can not authenticate with invalid password', function () {
@@ -37,5 +54,5 @@ test('users can logout', function () {
     $response = $this->actingAs($user)->post('/logout');
 
     $this->assertGuest();
-    $response->assertRedirect('/');
+    $response->assertRedirect(route('login', absolute: false));
 });

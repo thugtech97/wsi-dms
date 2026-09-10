@@ -20,6 +20,21 @@ class User extends Authenticatable implements Auditable
         return $this->hasMany(Document::class, 'owner_id');
     }
 
+    public function isAdmin(): bool
+    {
+        return $this->hasRole('admin');
+    }
+
+    /**
+     * Where this user lands after signing in. The dashboard is admin-only and
+     * aborts 403 for everyone else, so other roles start on the documents list
+     * — the one page every role can use.
+     */
+    public function homeRoute(): string
+    {
+        return $this->isAdmin() ? 'dashboard' : 'documents.index';
+    }
+
     protected $fillable = [
         'name',
         'email',

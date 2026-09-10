@@ -1,7 +1,8 @@
 <?php
 
-it('returns a successful response', function () {
+// There is no public landing page: '/' sends a visitor to the login screen.
+it('sends a visitor to the login screen', function () {
     $response = $this->get('/');
 
-    $response->assertStatus(200);
+    $response->assertRedirect(route('login', absolute: false));
 });

@@ -50,7 +50,7 @@ class AuthenticatedSessionController extends Controller
             'tags'           => null,
         ]);
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        return redirect()->intended(route($user->homeRoute(), absolute: false));
     }
 
     public function destroy(Request $request): RedirectResponse
