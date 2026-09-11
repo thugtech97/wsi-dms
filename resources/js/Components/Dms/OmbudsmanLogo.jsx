@@ -9,7 +9,7 @@ import { usePage } from '@inertiajs/react';
 export const OMBUDSMAN_LOGO_PATH = 'img/ombudsman-logo.webp';
 
 export const APP_NAME       = 'Office of the Ombudsman';
-export const APP_SUBTITLE   = 'Document Management System';
+export const APP_SUBTITLE   = 'Document Barcode and QR Code System';
 export const APP_FULL_NAME  = `${APP_NAME} - ${APP_SUBTITLE}`;
 
 /**

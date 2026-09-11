@@ -26,7 +26,7 @@ export default function DmsGuestLayout({ children, title, subtitle }) {
                     <div style={{ marginBottom: '2.25rem', position: 'relative' }}>
                         <AuthSeal size={168} style={{ marginBottom: '1.35rem' }} />
                         <h1 style={{ fontSize: '1.45rem', fontWeight: 700, lineHeight: 1.35, marginBottom: '0.6rem', letterSpacing: '-0.01em', color: '#1e1b4b' }}>
-                            Office of the<br />Ombudsman<br />Document Management System
+                            Office of the<br />Ombudsman<br />Document Barcode and QR Code System
                         </h1>
                         <p style={{ color: '#3730a3', fontSize: '0.875rem', fontWeight: 500 }}>
                             Secure. Organized. Accessible.

@@ -13,7 +13,7 @@ export default function SettingsIndex({ settings, systemInfo, formFields = [], f
     const s = (key, def = '') => settings[key] ?? def;
 
     const [form, setForm] = useState({
-        system_name:          s('system_name',          'Office of the Ombudsman - Document Management System'),
+        system_name:          s('system_name',          'Office of the Ombudsman - Document Barcode and QR Code System'),
         default_language:     s('default_language',     'English'),
         timezone:             s('timezone',             'Asia/Manila'),
         date_format:          s('date_format',          'MMM DD, YYYY'),

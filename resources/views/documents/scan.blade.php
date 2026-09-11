@@ -87,7 +87,7 @@
             <img src="{{ asset('img/ombudsman-logo.webp') }}" alt="Office of the Ombudsman seal">
             <div>
                 <div class="brand-name">Office of the Ombudsman</div>
-                <div class="brand-sub">Document Management System</div>
+                <div class="brand-sub">Document Barcode and QR Code System</div>
             </div>
         </div>
 
@@ -142,7 +142,7 @@
         </div>
 
         <p class="foot">
-            Office of the Ombudsman · Document Management System<br>
+            Office of the Ombudsman · Document Barcode and QR Code System<br>
             Scanned {{ now()->format('M d, Y h:i A') }}
         </p>
     </div>

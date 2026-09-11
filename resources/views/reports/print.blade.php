@@ -162,7 +162,7 @@
         <div class="brand">
             <img class="brand-logo" src="{{ asset('img/ombudsman-logo.webp') }}" alt="Office of the Ombudsman seal">
             <div>
-                <div class="brand-name">Office of the Ombudsman<br><span style="font-weight:500">Document Management System</span></div>
+                <div class="brand-name">Office of the Ombudsman<br><span style="font-weight:500">Document Barcode and QR Code System</span></div>
                 <div class="brand-sub">Administrative Report · Confidential</div>
             </div>
         </div>
@@ -216,7 +216,7 @@
 
     {{-- Footer --}}
     <div class="print-footer">
-        <span>Office of the Ombudsman - Document Management System &mdash; {{ $title }}</span>
+        <span>Office of the Ombudsman - Document Barcode and QR Code System &mdash; {{ $title }}</span>
         <span>Generated {{ $generated }} &bull; {{ $total }} record(s) &bull; Admin Report</span>
     </div>
 
