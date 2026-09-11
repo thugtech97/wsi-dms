@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\Document;
 use App\Models\DocumentFormField;
+use App\Models\DocumentType;
 use Illuminate\Support\Collection;
 
 /**
@@ -88,6 +89,14 @@ class DocumentSchema
         }
 
         $attributes['custom_fields'] = $custom ?: null;
+
+        // The Label field may be hidden or left blank; documents.name is NOT NULL,
+        // so an unlabelled document is named after its document class instead.
+        $nameSubmitted = array_key_exists('name', $attributes);
+        if (($nameSubmitted && ! $attributes['name']) || (! $nameSubmitted && ! $document)) {
+            $typeId = $attributes['document_type_id'] ?? $document?->document_type_id;
+            $attributes['name'] = DocumentType::find($typeId)?->name ?? 'Untitled Document';
+        }
 
         return $attributes;
     }

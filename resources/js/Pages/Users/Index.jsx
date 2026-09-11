@@ -108,7 +108,7 @@ export default function UsersIndex({ users, roles }) {
                                             <input
                                                 type="text"
                                                 value={roleForm.data.name}
-                                                onChange={e => roleForm.setData('name', e.target.value)}
+                                                onChange={e => roleForm.setData('name', e.target.value.replace(/\s+/g, '_'))}
                                                 placeholder="e.g. manager"
                                                 style={{ ...inputSt, flex: 1 }}
                                                 required

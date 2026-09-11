@@ -44,6 +44,9 @@ export default function DmsProfileEdit({ mustVerifyEmail, status }) {
                         <Field label="Email" error={profileForm.errors.email}>
                             <input style={inputSt} type="email" value={profileForm.data.email} onChange={e => profileForm.setData('email', e.target.value)} required />
                         </Field>
+                        <Field label="Role">
+                            <input style={{ ...inputSt, background: '#f8fafc', color: '#64748b', cursor: 'not-allowed' }} value={user.role} readOnly disabled title="Your role is assigned by an administrator" />
+                        </Field>
                         <IndigoBtn type="submit" disabled={profileForm.processing}>
                             {profileForm.processing ? 'Saving...' : 'Save Changes'}
                         </IndigoBtn>
