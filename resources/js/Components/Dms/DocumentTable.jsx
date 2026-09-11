@@ -60,7 +60,7 @@ export default function DocumentTable({ documents, documentTypes = [], users = [
                                 {/* Wide enough for a QR and a barcode side by side. */}
                                 <th style={{ ...TH, width: isMobile ? 110 : 175 }}>Asset</th>
                                 <th style={TH}>Label</th>
-                                <th style={TH}>Document Class</th>
+                                <th style={TH}>Document Type</th>
                                 {!isMobile && <th style={TH}>URL</th>}
                                 {/* {!isMobile && <th style={TH}>Department</th>} */}
                                 {!isMobile && <th style={TH}>Added By</th>}
@@ -285,7 +285,7 @@ function DocumentViewModal({ doc, documentTypes, users, roles, formFields = [], 
             <div class="img-wrap"><img src="${code.image}" /></div>
             <div class="code">${code.codeId}</div>
             <div class="meta">
-                <div><strong>Document Class:</strong> ${doc.type}</div>
+                <div><strong>Document Type:</strong> ${doc.type}</div>
                 <div><strong>Department:</strong> ${doc.department}</div>
                 <div><strong>Document Date:</strong> ${doc.documentDate}</div>
                 <div><strong>Added By:</strong> ${doc.owner}</div>
@@ -414,7 +414,7 @@ function DocumentViewModal({ doc, documentTypes, users, roles, formFields = [], 
                             </div>
 
                             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '0.75rem' }}>
-                                <DetailCard label="Document Class" icon="🏷️"><Badge type={doc.type} /></DetailCard>
+                                <DetailCard label="Document Type" icon="🏷️"><Badge type={doc.type} /></DetailCard>
                                 <DetailCard label="Created At" icon="🕒"><span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1e293b' }}>{doc.createdAt}</span></DetailCard>
                                 <DetailCard label="Document Date" icon="📅"><span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1e293b' }}>{doc.documentDate}</span></DetailCard>
                                 <DetailCard label="Added By" icon="👤"><span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1e293b' }}>{doc.owner}</span></DetailCard>
@@ -499,7 +499,7 @@ function DocumentViewModal({ doc, documentTypes, users, roles, formFields = [], 
                                     {code.codeId}
                                 </div>
                                 <div style={{ fontSize: '0.78rem', color: '#64748b', lineHeight: 1.9, textAlign: 'left' }}>
-                                    <div><strong style={{ color: '#334155' }}>Document Class:</strong> {doc.type}</div>
+                                    <div><strong style={{ color: '#334155' }}>Document Type:</strong> {doc.type}</div>
                                     <div><strong style={{ color: '#334155' }}>Department:</strong> {doc.department}</div>
                                     <div><strong style={{ color: '#334155' }}>Document Date:</strong> {doc.documentDate}</div>
                                     <div><strong style={{ color: '#334155' }}>Added By:</strong> {doc.owner}</div>

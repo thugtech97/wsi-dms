@@ -28,13 +28,13 @@ export default function DocumentFilter({ filters, onChange, onClear, onAddNew, d
                         />
                     </div>
 
-                    {/* Document Class filter */}
+                    {/* Document Type filter */}
                     <select
                         value={filters.type}
                         onChange={e => onChange('type', e.target.value)}
                         style={{ flex: isMobile ? undefined : 1, minWidth: isMobile ? undefined : 140, padding: '0.47rem 0.75rem', fontSize: '0.85rem', border: '1px solid #cbd5e1', borderRadius: 6, color: '#1e293b', outline: 'none', background: '#fff' }}
                     >
-                        <option value="">All Classes</option>
+                        <option value="">All Types</option>
                         {documentTypes.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
                     </select>
 

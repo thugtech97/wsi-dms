@@ -160,9 +160,9 @@ function DocumentListTab({ data, docTypes, filters }) {
         <>
             {/* Filters */}
             <form onSubmit={apply} style={filterBarStyle}>
-                <FilterField label="Document Class">
+                <FilterField label="Document Type">
                     <select value={form.dl_type} onChange={e => setForm(f => ({ ...f, dl_type: e.target.value }))} style={inputStyle}>
-                        <option value="">All Classes</option>
+                        <option value="">All Types</option>
                         {docTypes.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
                     </select>
                 </FilterField>
@@ -187,7 +187,7 @@ function DocumentListTab({ data, docTypes, filters }) {
             {/* Table */}
             <DataTable
                 total={data.total}
-                headers={['Asset', 'Label', 'Document Class', 'Department', 'Added By', 'Document Date']}
+                headers={['Asset', 'Label', 'Document Type', 'Department', 'Added By', 'Document Date']}
                 empty="No documents found."
                 links={data.links}
                 from={data.from} to={data.to}

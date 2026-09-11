@@ -103,7 +103,7 @@
 
                 <dl class="meta">
                     <div class="meta-row">
-                        <dt>Document Class</dt>
+                        <dt>Document Type</dt>
                         <dd>{{ $document->documentType?->name ?? '—' }}</dd>
                     </div>
                     <div class="meta-row">

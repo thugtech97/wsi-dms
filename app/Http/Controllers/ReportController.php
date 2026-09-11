@@ -131,7 +131,7 @@ class ReportController extends Controller
             ]);
 
         $filters = [
-            'Document Class' => $request->dl_type  ?: 'All Classes',
+            'Document Type' => $request->dl_type  ?: 'All Types',
             'Label'          => $request->dl_label ?: 'All',
             'Department'     => $request->dl_dept  ?: 'All',
             'Date From'      => $request->dl_from  ?? 'Any',
@@ -140,7 +140,7 @@ class ReportController extends Controller
 
         return view('reports.print', [
             'title'     => 'Document List per Type',
-            'headers'   => ['Code IDs', 'Label', 'Document Class', 'Department', 'Added By', 'Document Date'],
+            'headers'   => ['Code IDs', 'Label', 'Document Type', 'Department', 'Added By', 'Document Date'],
             'rows'      => $rows->all(),
             'filters'   => $filters,
             'generated' => now()->format('M d, Y h:i A'),
