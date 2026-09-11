@@ -7,15 +7,15 @@ use App\Services\DocumentCodeGenerator;
 use Illuminate\Console\Command;
 
 /**
- * QR images issued while they encoded the scan URL still open a link when a
- * phone reads them, rather than handing back the tracking number. This redraws
- * every QR image in place; the code rows themselves are untouched.
+ * Redraws every stored QR image so it encodes the public scan URL for its code
+ * (QR images issued earlier may carry the bare tracking number, which a phone
+ * camera cannot open). The code rows themselves are untouched.
  */
 class RefreshDocumentQrCodes extends Command
 {
     protected $signature = 'documents:refresh-qr';
 
-    protected $description = 'Redraw every QR code image so it encodes the bare tracking number';
+    protected $description = 'Redraw every QR code image so it encodes the scan page URL';
 
     public function handle(DocumentCodeGenerator $codes): int
     {
@@ -31,11 +31,11 @@ class RefreshDocumentQrCodes extends Command
 
         foreach ($qrCodes as $code) {
             $codes->writeImage($code->image_path, $code->type, $code->code_value);
-            $this->components->twoColumnDetail($code->code_id, $code->code_value);
+            $this->components->twoColumnDetail($code->code_id, DocumentCodeGenerator::scanUrl($code->code_value));
         }
 
         $this->newLine();
-        $this->components->info('Done. Every QR now scans back as its code.');
+        $this->components->info('Done. Every QR now opens its scan page.');
 
         return self::SUCCESS;
     }

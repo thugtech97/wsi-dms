@@ -1,5 +1,6 @@
 {{--
-    Where a signed-out scan lands. It shows the document's code and details and
+    Where a scanned QR lands. It shows the code image and the document's details
+    (additional information included, Added By last, blank rows left out) and
     offers its URL and attached file as links rather than forwarding to them —
     a scan ends here, not on an external site the reader never chose to open.
 --}}
@@ -41,6 +42,18 @@
         .card-head span   { font-size: 11px; color: #94a3b8; }
 
         .body { padding: 18px; }
+        .code-img {
+            display: flex; justify-content: center; margin-bottom: 14px;
+        }
+        .code-img img {
+            width: 160px; height: auto; padding: 10px;
+            border: 1px solid #e2e8f0; border-radius: 10px; background: #fff;
+        }
+        .code-img img.bc { width: 240px; padding: 12px 16px; }
+        .section {
+            margin: 16px 0 4px; font-size: 10px; font-weight: 700; color: #94a3b8;
+            text-transform: uppercase; letter-spacing: 0.6px;
+        }
         .label { font-size: 17px; font-weight: 700; color: #0f172a; line-height: 1.35; word-break: break-word; }
         .code {
             display: inline-block; margin-top: 8px;
@@ -98,22 +111,48 @@
             </div>
 
             <div class="body">
+                @if ($code->imageUrl())
+                    <div class="code-img">
+                        <img src="{{ $code->imageUrl() }}" alt="{{ $code->code_id }}" class="{{ $code->type === 'QR' ? 'qr' : 'bc' }}">
+                    </div>
+                @endif
+
                 <div class="label">{{ $document->name }}</div>
                 <div class="code">{{ $code->code_id }}</div>
 
+                @php
+                    // Same order as the printed label; blank rows are dropped.
+                    $rows = array_filter([
+                        'Document Type' => $document->documentType?->name,
+                        'Department'    => $document->department,
+                        'Document Date' => $document->created_at->format('M d, Y'),
+                    ], fn ($v) => $v !== null && $v !== '' && $v !== '—');
+                @endphp
+
                 <dl class="meta">
-                    <div class="meta-row">
-                        <dt>Document Type</dt>
-                        <dd>{{ $document->documentType?->name ?? '—' }}</dd>
-                    </div>
-                    <div class="meta-row">
-                        <dt>Department</dt>
-                        <dd>{{ $document->department ?: '—' }}</dd>
-                    </div>
-                    <div class="meta-row">
-                        <dt>Document Date</dt>
-                        <dd>{{ $document->created_at->format('M d, Y') }}</dd>
-                    </div>
+                    @foreach ($rows as $label => $value)
+                        <div class="meta-row">
+                            <dt>{{ $label }}</dt>
+                            <dd>{{ $value }}</dd>
+                        </div>
+                    @endforeach
+
+                    @if ($extraRows)
+                        <div class="section">Additional Information</div>
+                        @foreach ($extraRows as $label => $value)
+                            <div class="meta-row">
+                                <dt>{{ $label }}</dt>
+                                <dd>{{ $value }}</dd>
+                            </div>
+                        @endforeach
+                    @endif
+
+                    @if ($document->owner)
+                        <div class="meta-row">
+                            <dt>Added By</dt>
+                            <dd>{{ $document->owner->name }}</dd>
+                        </div>
+                    @endif
                 </dl>
 
                 <div class="actions">
@@ -125,7 +164,11 @@
                         <a class="btn {{ $documentUrl ? 'btn-secondary' : 'btn-primary' }}" href="{{ $fileUrl }}" rel="noopener">Open Attached File</a>
                     @endif
 
-                    <a class="btn btn-quiet" href="{{ route('login') }}">Sign in to the DMS</a>
+                    @if ($dmsUrl)
+                        <a class="btn btn-quiet" href="{{ $dmsUrl }}">Open in the DMS</a>
+                    @else
+                        <a class="btn btn-quiet" href="{{ route('login') }}">Sign in to the DMS</a>
+                    @endif
                 </div>
 
                 @if ($documentUrl)

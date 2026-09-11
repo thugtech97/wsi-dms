@@ -165,21 +165,17 @@ class DocumentController extends Controller
     }
 
     /**
-     * Opens the document a scanned code points at.
-     *
-     * A scan ends on a page about the document, not on the document's own URL:
-     * forwarding a reader to an external site they never chose to open is the
-     * behaviour this replaces. The page offers that URL as a link instead.
-     * Signed-in staff still go straight to the record in the DMS.
-     *
-     * Reached by handheld scanners typing the code into the search box, and by
-     * QR labels printed while the images encoded this URL.
+     * The page a scanned QR opens. It counts the scan and shows the code with
+     * the document's details — the same rows as the printed label, additional
+     * information included. It never forwards anywhere: the document's URL and
+     * attached file are offered as links, and signed-in staff get a button
+     * into the DMS record.
      */
     public function resolve(string $code)
     {
         $code = DocumentCode::normaliseScanInput($code);
 
-        $match = DocumentCode::with('document.documentType')
+        $match = DocumentCode::with('document.documentType', 'document.owner')
             ->where('code_value', $code)
             ->orWhere('code_id', $code)
             ->firstOrFail();
@@ -187,17 +183,15 @@ class DocumentController extends Controller
         $document = $match->document;
         $document->increment('scan_count');
 
-        if (auth()->check()) {
-            return redirect()->route('documents.index', ['open' => $document->id]);
-        }
-
         return response()->view('documents.scan', [
             'document'    => $document,
             'code'        => $match,
+            'extraRows'   => DocumentSchema::displayRows($document),
             'documentUrl' => $document->link_document_url
                 ? $this->absoluteUrl($document->link_document_url)
                 : null,
             'fileUrl'     => $document->file_path ? url('storage/' . $document->file_path) : null,
+            'dmsUrl'      => auth()->check() ? route('documents.index', ['open' => $document->id]) : null,
         ]);
     }
 

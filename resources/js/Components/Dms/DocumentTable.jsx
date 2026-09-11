@@ -59,7 +59,8 @@ export default function DocumentTable({ documents, documentTypes = [], users = [
                             <tr>
                                 {/* Wide enough for a QR and a barcode side by side. */}
                                 <th style={{ ...TH, width: isMobile ? 110 : 175 }}>Asset</th>
-                                <th style={TH}>Label</th>
+                                {/* Label column hidden on request — it usually repeats the Document Type. */}
+                                {/* <th style={TH}>Label</th> */}
                                 <th style={TH}>Document Type</th>
                                 {!isMobile && <th style={TH}>URL</th>}
                                 {/* {!isMobile && <th style={TH}>Department</th>} */}
@@ -72,7 +73,7 @@ export default function DocumentTable({ documents, documentTypes = [], users = [
                         <tbody>
                             {total === 0 ? (
                                 <tr>
-                                    <td colSpan={isMobile ? 3 : 6} style={{ ...TD, textAlign: 'center', color: '#94a3b8', padding: '2.5rem' }}>
+                                    <td colSpan={isMobile ? 3 : 7} style={{ ...TD, textAlign: 'center', color: '#94a3b8', padding: '2.5rem' }}>
                                         No documents found.
                                     </td>
                                 </tr>
@@ -206,12 +207,12 @@ function DocumentRow({ doc, onView, isMobile }) {
             <td style={{ ...TD, padding: isMobile ? '0.6rem 0.75rem' : TD.padding }}>
                 <CodeCell codes={doc.codes} compact={isMobile} />
             </td>
-            <td style={{ ...TD, padding: isMobile ? '0.6rem 0.75rem' : TD.padding }}>
+            {/* <td style={{ ...TD, padding: isMobile ? '0.6rem 0.75rem' : TD.padding }}>
                 <span style={{ fontWeight: 600, color: '#0f172a', fontSize: isMobile ? '0.8rem' : '0.85rem', wordBreak: 'break-word' }}>
                     {doc.label}
                 </span>
                 {isMobile && <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: 2 }}>{doc.department !== '—' ? doc.department : ''}</div>}
-            </td>
+            </td> */}
             <td style={{ ...TD, padding: isMobile ? '0.6rem 0.75rem' : TD.padding }}>
                 <Badge type={doc.type} />
             </td>
@@ -250,6 +251,19 @@ function DocumentViewModal({ doc, documentTypes, users, roles, formFields = [], 
     const SHOWN_ABOVE  = ['label', 'document_type_id', 'department'];
     const extraFields  = formFields.filter(f => f.is_active && !SHOWN_ABOVE.includes(f.key));
 
+    // Rows under the code on a printed label: the fixed details, then every
+    // extra form field, with Added By last. Blank values drop their row.
+    const printMeta = useMemo(() => {
+        const rows = [
+            ['Document Type', doc.type],
+            ['Department',    doc.department],
+            ['Document Date', doc.documentDate],
+            ...extraFields.map(f => [f.label, formatFieldValue(f, documentFieldValue(f, doc), sources)]),
+            ['Added By',      doc.owner],
+        ];
+        return rows.filter(([, v]) => v !== null && v !== undefined && v !== '' && v !== '—');
+    }, [doc, extraFields, documentTypes, users, roles]);
+
     const handleKey = useCallback(e => {
         if (e.key === 'Escape') { setConfirmDelete(false); onClose(); }
     }, [onClose]);
@@ -285,10 +299,7 @@ function DocumentViewModal({ doc, documentTypes, users, roles, formFields = [], 
             <div class="img-wrap"><img src="${code.image}" /></div>
             <div class="code">${code.codeId}</div>
             <div class="meta">
-                <div><strong>Document Type:</strong> ${doc.type}</div>
-                <div><strong>Department:</strong> ${doc.department}</div>
-                <div><strong>Document Date:</strong> ${doc.documentDate}</div>
-                <div><strong>Added By:</strong> ${doc.owner}</div>
+                ${printMeta.map(([label, value]) => `<div><strong>${escapeHtml(label)}:</strong> ${escapeHtml(value)}</div>`).join('')}
             </div>
         </div>`).join('');
 
@@ -499,10 +510,9 @@ function DocumentViewModal({ doc, documentTypes, users, roles, formFields = [], 
                                     {code.codeId}
                                 </div>
                                 <div style={{ fontSize: '0.78rem', color: '#64748b', lineHeight: 1.9, textAlign: 'left' }}>
-                                    <div><strong style={{ color: '#334155' }}>Document Type:</strong> {doc.type}</div>
-                                    <div><strong style={{ color: '#334155' }}>Department:</strong> {doc.department}</div>
-                                    <div><strong style={{ color: '#334155' }}>Document Date:</strong> {doc.documentDate}</div>
-                                    <div><strong style={{ color: '#334155' }}>Added By:</strong> {doc.owner}</div>
+                                    {printMeta.map(([label, value]) => (
+                                        <div key={label}><strong style={{ color: '#334155' }}>{label}:</strong> {value}</div>
+                                    ))}
                                 </div>
                             </div>
                         ))}
@@ -589,6 +599,11 @@ function DocumentEditModal({ doc, documentTypes, users, roles, formFields = [], 
 
 function EditField({ label, error, children }) {
     return <div style={{ marginBottom: '1rem' }}><label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: '#475569', marginBottom: 5 }}>{label}</label>{children}{error && <p style={{ color: '#ef4444', fontSize: '0.75rem', margin: '4px 0 0' }}>{error}</p>}</div>;
+}
+
+/** Values on the printed label are interpolated into HTML, so keep any markup in them inert. */
+function escapeHtml(value) {
+    return String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
 function CustomFieldValue({ field, doc, sources }) {

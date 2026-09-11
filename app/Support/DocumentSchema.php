@@ -5,7 +5,9 @@ namespace App\Support;
 use App\Models\Document;
 use App\Models\DocumentFormField;
 use App\Models\DocumentType;
+use App\Models\User;
 use Illuminate\Support\Collection;
+use Spatie\Permission\Models\Role;
 
 /**
  * The Add New Document form is admin-configurable (Settings → Document Form).
@@ -99,6 +101,80 @@ class DocumentSchema
         }
 
         return $attributes;
+    }
+
+    /**
+     * The "Additional Information" of a document as label => display text, in
+     * form order — every active field beyond the fixed ones, with choice ids
+     * resolved to names and blanks left out. Used where React is not available
+     * to format them (the public scan page).
+     *
+     * @return array<string, string>
+     */
+    public static function displayRows(Document $document, array $skip = ['label', 'document_type_id', 'department']): array
+    {
+        $rows = [];
+
+        foreach (self::fields()->reject(fn (DocumentFormField $f) => in_array($f->key, $skip, true)) as $field) {
+            $raw = $field->column_name
+                ? $document->{$field->column_name}
+                : ($document->custom_fields[$field->key] ?? null);
+
+            // allowed_users / allowed_roles are string columns holding JSON.
+            if ($field->isMulti() && is_string($raw)) {
+                $raw = json_decode($raw, true) ?? [];
+            }
+
+            $text = self::formatValue($field, $raw);
+
+            if ($text !== null && $text !== '') {
+                $rows[$field->label] = $text;
+            }
+        }
+
+        return $rows;
+    }
+
+    private static function formatValue(DocumentFormField $field, mixed $value): ?string
+    {
+        if ($field->type === 'checkbox') {
+            return $value ? 'Yes' : 'No';
+        }
+
+        if ($value === null || $value === '' || $value === []) {
+            return null;
+        }
+
+        if (in_array($field->type, DocumentFormField::CHOICE_TYPES, true)) {
+            $lookup = self::choiceLabels($field);
+            $values = $field->isMulti() ? (array) $value : [$value];
+            $labels = array_map(fn ($v) => $lookup[(string) $v] ?? (string) $v, $values);
+
+            return implode(', ', $labels);
+        }
+
+        if ($field->type === 'date') {
+            try {
+                return \Carbon\Carbon::parse($value)->format('M d, Y');
+            } catch (\Throwable) {
+                return (string) $value;
+            }
+        }
+
+        return is_scalar($value) ? (string) $value : json_encode($value);
+    }
+
+    /** @return array<string, string> option value => label */
+    private static function choiceLabels(DocumentFormField $field): array
+    {
+        $rows = match ($field->options_source) {
+            'document_types' => DocumentType::pluck('name', 'id'),
+            'users'          => User::pluck('name', 'id'),
+            'roles'          => Role::pluck('name', 'id'),
+            default          => collect($field->options ?? [])->pluck('label', 'value'),
+        };
+
+        return $rows->mapWithKeys(fn ($label, $value) => [(string) $value => (string) $label])->all();
     }
 
     /**
