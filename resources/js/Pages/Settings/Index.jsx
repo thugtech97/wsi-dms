@@ -2,8 +2,12 @@ import { useState, useEffect, useRef } from 'react';
 import { Head, router, usePage, Link } from '@inertiajs/react';
 import DmsLayout from '@/Layouts/DmsLayout';
 import DocumentFormBuilder from '@/Components/Dms/DocumentFormBuilder';
+import DocumentTypesPanel from '@/Components/Dms/DocumentTypesPanel';
+import FoldersPanel from '@/Components/Dms/FoldersPanel';
 
-export default function SettingsIndex({ settings, systemInfo, formFields = [], fieldTypes = [], choiceTypes = [] }) {
+const TABS = [['general', 'General Settings'], ['form', 'Document Form'], ['types', 'Document Types'], ['folders', 'Folders'], ['code', 'Code Format']];
+
+export default function SettingsIndex({ settings, systemInfo, formFields = [], fieldTypes = [], choiceTypes = [], documentTypes = [], folders = [], availableRoles = [], tab = 'general' }) {
     const { flash } = usePage().props;
 
     const s = (key, def = '') => settings[key] ?? def;
@@ -25,9 +29,19 @@ export default function SettingsIndex({ settings, systemInfo, formFields = [], f
     });
 
     const [saving, setSaving]     = useState(false);
-    const [activeTab, setActiveTab] = useState('general');
+    const [activeTab, setActiveTab] = useState(TABS.some(([k]) => k === tab) ? tab : 'general');
 
     function set(key, value) { setForm(f => ({ ...f, [key]: value })); }
+
+    // Keep the tab in the URL so a refresh, or a redirect back after saving, reopens it.
+    function selectTab(key) {
+        setActiveTab(key);
+        if (typeof window !== 'undefined') {
+            const url = new URL(window.location.href);
+            url.searchParams.set('tab', key);
+            window.history.replaceState(window.history.state, '', url);
+        }
+    }
 
     function handleSave(e) {
         e.preventDefault();
@@ -78,8 +92,8 @@ export default function SettingsIndex({ settings, systemInfo, formFields = [], f
 
                 {/* Tab bar */}
                 <div style={{ display: 'flex', borderBottom: '2px solid #e2e8f0', marginBottom: '1.5rem', gap: 0 }}>
-                    {[['general','General Settings'], ['form','Document Form'], ['code','Code Format']].map(([key, label]) => (
-                        <button key={key} type="button" onClick={() => setActiveTab(key)} style={{
+                    {TABS.map(([key, label]) => (
+                        <button key={key} type="button" onClick={() => selectTab(key)} style={{
                             padding: '0.55rem 1.25rem', fontSize: '0.83rem', fontWeight: 600, border: 'none',
                             borderBottom: activeTab === key ? '2px solid #2563eb' : '2px solid transparent',
                             marginBottom: -2, background: 'none', cursor: 'pointer',
@@ -244,7 +258,7 @@ export default function SettingsIndex({ settings, systemInfo, formFields = [], f
                             {/* Quick Actions */}
                             <Card title="Quick Actions">
                                 {[
-                                    { label: 'Manage Document Templates', href: route('document-types.index'), icon: <DocIcon /> },
+                                    { label: 'Manage Document Types',     href: null,                         icon: <DocIcon />, onClick: () => selectTab('types') },
                                     { label: 'Manage Workflow Templates',  href: null,                         icon: <WorkflowIcon /> },
                                     { label: 'Manage Roles & Permissions', href: route('users.index'),         icon: <RolesIcon /> },
                                     { label: 'Configure Email Settings',   href: null,                         icon: <EmailIcon /> },
@@ -256,7 +270,7 @@ export default function SettingsIndex({ settings, systemInfo, formFields = [], f
                                             onMouseLeave={e => e.currentTarget.style.background = '#f8fafc/50'}>
                                             <span style={{ color: '#94a3b8' }}>{a.icon}</span>{a.label}
                                           </Link>
-                                        : <button key={a.label} type="button" style={qaStyle}
+                                        : <button key={a.label} type="button" style={qaStyle} onClick={a.onClick}
                                             onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'}
                                             onMouseLeave={e => e.currentTarget.style.background = 'rgba(248,250,252,0.5)'}>
                                             <span style={{ color: '#94a3b8' }}>{a.icon}</span>{a.label}
@@ -286,6 +300,10 @@ export default function SettingsIndex({ settings, systemInfo, formFields = [], f
                         choiceTypes={choiceTypes}
                     />
                 </>}
+
+                {activeTab === 'types'   && <DocumentTypesPanel documentTypes={documentTypes} folders={folders} />}
+
+                {activeTab === 'folders' && <FoldersPanel folders={folders} availableRoles={availableRoles} />}
 
                 {activeTab === 'code' && <CodeCustomizer />}
 

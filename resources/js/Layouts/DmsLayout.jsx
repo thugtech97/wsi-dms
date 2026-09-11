@@ -6,8 +6,7 @@ import OmbudsmanLogo, { APP_NAME, APP_SUBTITLE } from '@/Components/Dms/Ombudsma
 const ALL_NAV_ITEMS = [
     { label: 'Dashboard',       icon: <DashboardIcon />, routeName: 'dashboard',            adminOnly: true },
     { label: 'Documents',       icon: <DocumentIcon />,  routeName: 'documents.index',      adminOnly: false },
-    { label: 'Document Types',  icon: <TagsIcon />,      routeName: 'document-types.index', adminOnly: true },
-    { label: 'Folders',         icon: <FolderNavIcon />, routeName: 'folders.index',        adminOnly: true },
+    // Document Types and Folders are tabs on the Settings page.
     { label: 'Audit Trail',     icon: <AuditIcon />,     routeName: 'audit-trail.index',    adminOnly: true },
     { label: 'Reports',         icon: <ChartIcon />,     routeName: 'reports.index',        adminOnly: true },
     { label: 'Settings',        icon: <SettingsIcon />,  routeName: 'settings.index',       adminOnly: true },

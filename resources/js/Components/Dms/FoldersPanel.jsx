@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Head, useForm } from '@inertiajs/react';
-import DmsLayout from '@/Layouts/DmsLayout';
+import { useForm } from '@inertiajs/react';
 import { useConfirm } from '@/Components/Dms/ConfirmDialog';
 
-export default function FoldersIndex({ folders, availableRoles }) {
+// Settings → Folders tab. Lives on the Settings page, so no layout of its own.
+export default function FoldersPanel({ folders, availableRoles }) {
     const [editingFolder, setEditingFolder] = useState(null);
     const { confirm, dialog } = useConfirm();
 
@@ -22,7 +22,7 @@ export default function FoldersIndex({ folders, availableRoles }) {
 
     function handleCreate(e) {
         e.preventDefault();
-        createForm.post(route('folders.store'), { onSuccess: () => createForm.reset() });
+        createForm.post(route('folders.store'), { onSuccess: () => createForm.reset(), preserveState: true, preserveScroll: true });
     }
 
     async function handleDelete(id, name) {
@@ -34,14 +34,12 @@ export default function FoldersIndex({ folders, availableRoles }) {
         });
         if (!ok) return;
 
-        deleteForm.delete(route('folders.destroy', id));
+        deleteForm.delete(route('folders.destroy', id), { preserveState: true, preserveScroll: true });
     }
 
     return (
-        <DmsLayout activePage="Folders">
-            <Head title="Folders" />
-            <div style={{ padding: '1.5rem', maxWidth: 860 }}>
-                <h1 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#0f172a', marginBottom: '1.5rem' }}>Folders</h1>
+        <>
+            <div>
 
                 {/* Create */}
                 <Card title="Create Folder">
@@ -158,7 +156,7 @@ export default function FoldersIndex({ folders, availableRoles }) {
                 />
             )}
             {dialog}
-        </DmsLayout>
+        </>
     );
 }
 
@@ -181,7 +179,7 @@ function EditFolderModal({ folder, availableRoles, onClose }) {
 
     function handleSubmit(e) {
         e.preventDefault();
-        form.put(route('folders.update', folder.id), { onSuccess: onClose });
+        form.put(route('folders.update', folder.id), { onSuccess: onClose, preserveState: true, preserveScroll: true });
     }
 
     return (

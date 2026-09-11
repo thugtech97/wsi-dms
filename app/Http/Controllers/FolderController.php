@@ -4,29 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\Folder;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
 use Spatie\Permission\Models\Role;
 
 class FolderController extends Controller
 {
+    /** Folders is now a tab on the Settings page; the old URL still lands there. */
     public function index()
     {
-        abort_if(! auth()->user()->hasRole('admin'), 403);
-
-        return Inertia::render('Folders/Index', [
-            'folders' => Folder::with('roles')->withCount('documentTypes')->orderBy('name')->get()
-                ->map(fn ($f) => [
-                    'id'                   => $f->id,
-                    'name'                 => $f->name,
-                    'document_types_count' => $f->document_types_count,
-                    'roles'                => $f->roles->map(fn ($r) => [
-                        'role_id'    => $r->id,
-                        'role_name'  => $r->name,
-                        'permission' => $r->pivot->permission,
-                    ]),
-                ]),
-            'availableRoles' => Role::orderBy('name')->get(['id', 'name']),
-        ]);
+        return redirect()->route('settings.index', ['tab' => 'folders']);
     }
 
     public function store(Request $request)
@@ -50,7 +35,7 @@ class FolderController extends Controller
             $folder->roles()->sync($sync);
         }
 
-        return redirect()->route('folders.index');
+        return back();
     }
 
     public function update(Request $request, Folder $folder)
@@ -72,7 +57,7 @@ class FolderController extends Controller
         }
         $folder->roles()->sync($sync);
 
-        return redirect()->route('folders.index');
+        return back();
     }
 
     public function destroy(Folder $folder)
@@ -80,6 +65,6 @@ class FolderController extends Controller
         abort_if(! auth()->user()->hasRole('admin'), 403);
         $folder->delete();
 
-        return redirect()->route('folders.index');
+        return back();
     }
 }

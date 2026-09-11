@@ -3,27 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\DocumentType;
-use App\Models\Folder;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
 
 class DocumentTypeController extends Controller
 {
+    /** Document Types is now a tab on the Settings page; the old URL still lands there. */
     public function index()
     {
-        abort_if(! auth()->user()->hasRole('admin'), 403);
-
-        return Inertia::render('DocumentTypes/Index', [
-            'documentTypes' => DocumentType::with('folder')->withCount('documents')->orderBy('name')->get()
-                ->map(fn ($t) => [
-                    'id'              => $t->id,
-                    'name'            => $t->name,
-                    'folder_id'       => $t->folder_id,
-                    'folder_name'     => $t->folder?->name,
-                    'documents_count' => $t->documents_count,
-                ]),
-            'folders' => Folder::orderBy('name')->get(['id', 'name']),
-        ]);
+        return redirect()->route('settings.index', ['tab' => 'types']);
     }
 
     public function store(Request $request)
@@ -40,7 +27,7 @@ class DocumentTypeController extends Controller
             'folder_id' => $request->folder_id ?: null,
         ]);
 
-        return redirect()->route('document-types.index');
+        return back();
     }
 
     public function update(Request $request, DocumentType $documentType)
@@ -57,7 +44,7 @@ class DocumentTypeController extends Controller
             'folder_id' => $request->folder_id ?: null,
         ]);
 
-        return redirect()->route('document-types.index');
+        return back();
     }
 
     public function destroy(DocumentType $documentType)
@@ -65,6 +52,6 @@ class DocumentTypeController extends Controller
         abort_if(! auth()->user()->hasRole('admin'), 403);
         $documentType->delete();
 
-        return redirect()->route('document-types.index');
+        return back();
     }
 }

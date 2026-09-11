@@ -343,7 +343,7 @@ function ActivityTimeline({ items }) {
 function QuickLinks() {
     const links = [
         { label: 'Add Document',  href: route('documents.index'),     icon: '📄', bc: '#eef2ff', bi: '#c7d2fe', hc: '#4f46e5' },
-        { label: 'Manage Types',  href: route('document-types.index'), icon: '🏷️', bc: '#f0fdf4', bi: '#bbf7d0', hc: '#16a34a' },
+        { label: 'Manage Types',  href: route('settings.index', { tab: 'types' }), icon: '🏷️', bc: '#f0fdf4', bi: '#bbf7d0', hc: '#16a34a' },
         { label: 'Manage Users',  href: route('users.index'),          icon: '👥', bc: '#f0f9ff', bi: '#bae6fd', hc: '#0284c7' },
         { label: 'System Reports',href: route('reports.index'),        icon: '📊', bc: '#fffbeb', bi: '#fde68a', hc: '#d97706' },
     ];
