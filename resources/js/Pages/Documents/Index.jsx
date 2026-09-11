@@ -23,6 +23,8 @@ const matchesCode = (doc, needle) => {
 
 export default function DocumentsIndex({ documents, documentTypes, users = [], roles = [], formFields = [], filters: serverFilters, openDocId }) {
     const { isMobile, isTablet } = useResponsive();
+    // Classes the user's role may file documents into (folder "manage" grant).
+    const manageableTypes = documentTypes.filter(t => t.can_manage !== false);
     const [filters, setFilters]   = useState({
         label:      serverFilters?.label      ?? '',
         type:       serverFilters?.type       ?? '',
@@ -145,7 +147,7 @@ export default function DocumentsIndex({ documents, documentTypes, users = [], r
                         filters={filters} 
                         onChange={handleFilterChange} 
                         onClear={handleClear} 
-                        onAddNew={() => setShowUploadModal(true)}
+                        onAddNew={manageableTypes.length ? () => setShowUploadModal(true) : null}
                         documentTypes={documentTypes} 
                     />
                     <DocumentTable documents={filtered} documentTypes={documentTypes} users={users} roles={roles} formFields={formFields} />
@@ -155,7 +157,7 @@ export default function DocumentsIndex({ documents, documentTypes, users = [], r
             {/* Global Document Upload Modal */}
             {showUploadModal && (
                 <UploadModal
-                    documentTypes={documentTypes}
+                    documentTypes={manageableTypes}
                     users={users}
                     roles={roles}
                     formFields={formFields}

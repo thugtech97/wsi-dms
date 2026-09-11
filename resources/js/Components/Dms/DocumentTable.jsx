@@ -415,7 +415,7 @@ function DocumentViewModal({ doc, documentTypes, users, roles, formFields = [], 
 
                             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '0.75rem' }}>
                                 <DetailCard label="Document Class" icon="🏷️"><Badge type={doc.type} /></DetailCard>
-                                <DetailCard label="Department" icon="🏢"><span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1e293b' }}>{doc.department}</span></DetailCard>
+                                <DetailCard label="Created At" icon="🕒"><span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1e293b' }}>{doc.createdAt}</span></DetailCard>
                                 <DetailCard label="Document Date" icon="📅"><span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1e293b' }}>{doc.documentDate}</span></DetailCard>
                                 <DetailCard label="Added By" icon="👤"><span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1e293b' }}>{doc.owner}</span></DetailCard>
                             </div>
@@ -459,12 +459,16 @@ function DocumentViewModal({ doc, documentTypes, users, roles, formFields = [], 
                                             <DownloadIcon /> Download File
                                         </button>
                                     )}
-                                    <button onClick={() => setEditing(true)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '0.58rem 0.9rem', background: '#fff', color: '#4f46e5', fontWeight: 600, fontSize: '0.82rem', borderRadius: 8, border: '1px solid #c7d2fe', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                                        <EditIcon /> Edit
-                                    </button>
-                                    <button onClick={() => setConfirmDelete(true)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '0.58rem 0.9rem', background: '#fff', color: '#ef4444', fontWeight: 600, fontSize: '0.82rem', borderRadius: 8, border: '1px solid #fecaca', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                                        <TrashIcon /> Delete
-                                    </button>
+                                    {doc.canManage !== false && (
+                                        <>
+                                            <button onClick={() => setEditing(true)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '0.58rem 0.9rem', background: '#fff', color: '#4f46e5', fontWeight: 600, fontSize: '0.82rem', borderRadius: 8, border: '1px solid #c7d2fe', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                                <EditIcon /> Edit
+                                            </button>
+                                            <button onClick={() => setConfirmDelete(true)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '0.58rem 0.9rem', background: '#fff', color: '#ef4444', fontWeight: 600, fontSize: '0.82rem', borderRadius: 8, border: '1px solid #fecaca', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                                <TrashIcon /> Delete
+                                            </button>
+                                        </>
+                                    )}
                                     <button onClick={onClose} style={{ padding: '0.58rem 0.9rem', background: '#f8fafc', color: '#475569', fontWeight: 600, fontSize: '0.82rem', borderRadius: 8, border: '1px solid #e2e8f0', cursor: 'pointer' }}>
                                         Close
                                     </button>
@@ -518,7 +522,7 @@ function DocumentViewModal({ doc, documentTypes, users, roles, formFields = [], 
             {editing && (
                 <DocumentEditModal
                     doc={doc}
-                    documentTypes={documentTypes}
+                    documentTypes={documentTypes.filter(t => t.can_manage !== false)}
                     users={users}
                     roles={roles}
                     formFields={formFields}

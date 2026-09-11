@@ -13,6 +13,7 @@ use App\Services\DocumentCodeGenerator;
 use App\Support\DocumentSchema;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
 
@@ -24,11 +25,16 @@ class DocumentController extends Controller
 
     public function index(Request $request)
     {
-        $user    = auth()->user();
-        $isAdmin = $user->hasRole('admin');
+        $user       = auth()->user();
+        $visible    = $user->visibleDocumentTypeIds();
+        $manageable = $user->manageableDocumentTypeIds();
 
+        // Folder grants decide what a non-admin sees: documents in classes their
+        // role can read, plus anything they added themselves.
         $documents = Document::with(['documentType', 'owner', 'codes'])
-            ->when(! $isAdmin, fn ($q) => $q->where('owner_id', $user->id))
+            ->when($visible !== null, fn ($q) => $q->where(fn ($q2) => $q2
+                ->whereIn('document_type_id', $visible)
+                ->orWhere('owner_id', $user->id)))
             ->when($request->label,      fn ($q) => $q->where('name', 'like', "%{$request->label}%"))
             ->when($request->type,       fn ($q) => $q->whereHas('documentType', fn ($q2) => $q2->where('name', $request->type)))
             ->when($request->department, fn ($q) => $q->where('department', 'like', "%{$request->department}%"))
@@ -41,6 +47,7 @@ class DocumentController extends Controller
                 'document_type_id'  => $d->document_type_id,
                 'department'        => $d->department ?? '—',
                 'documentDate'      => $d->created_at->format('M d, Y'),
+                'createdAt'         => $d->created_at->format('M d, Y · g:i A'),
                 'owner'             => $d->owner->name,
                 'codes'             => $d->codes->map->toDisplayArray()->all(),
                 'fileUrl'           => $d->file_path ? url('storage/' . $d->file_path) : null,
@@ -49,11 +56,24 @@ class DocumentController extends Controller
                 'allowed_roles'     => $d->allowed_roles ? json_decode($d->allowed_roles, true) : [],
                 'custom_fields'     => $d->custom_fields ?? [],
                 'scanCount'         => $d->scan_count,
+                'canManage'         => $manageable === null || in_array($d->document_type_id, $manageable, true),
+            ]);
+
+        // Non-admins only get the classes their folders grant; can_manage tells
+        // the form which of those they may actually file into.
+        $documentTypes = DocumentType::orderBy('name')
+            ->when($visible !== null, fn ($q) => $q->whereKey($visible))
+            ->get()
+            ->map(fn ($t) => [
+                'id'         => $t->id,
+                'name'       => $t->name,
+                'folder_id'  => $t->folder_id,
+                'can_manage' => $manageable === null || in_array($t->id, $manageable, true),
             ]);
 
         return Inertia::render('Documents/Index', [
             'documents'     => $documents,
-            'documentTypes' => DocumentType::orderBy('name')->get(),
+            'documentTypes' => $documentTypes,
             'users'         => User::orderBy('name')->get(),
             'roles'         => Role::orderBy('name')->get(),
             'formFields'    => DocumentFormField::active()->ordered()->get()
@@ -69,10 +89,12 @@ class DocumentController extends Controller
         if (strlen($q) < 2) return response()->json([]);
 
         $user    = auth()->user();
-        $isAdmin = $user->hasRole('admin');
+        $visible = $user->visibleDocumentTypeIds();
 
         $docs = Document::with(['documentType', 'owner', 'codes'])
-            ->when(! $isAdmin, fn ($query) => $query->where('owner_id', $user->id))
+            ->when($visible !== null, fn ($query) => $query->where(fn ($q2) => $q2
+                ->whereIn('document_type_id', $visible)
+                ->orWhere('owner_id', $user->id)))
             ->where(function ($query) use ($q) {
                 $query->where('name', 'like', "%{$q}%")
                       ->orWhereHas('codes', fn ($c) => $c
@@ -109,6 +131,8 @@ class DocumentController extends Controller
             DocumentSchema::attributes($fields),
         );
 
+        $this->ensureCanFileInto($request->input('document_type_id'));
+
         $document = Document::create(DocumentSchema::payload($fields, $request->all()) + [
             'file_path'        => null,
             'owner_id'         => auth()->id(),
@@ -124,9 +148,16 @@ class DocumentController extends Controller
 
     public function update(Request $request, Document $document)
     {
+        $this->authorizeManage($document);
+
         $fields = DocumentSchema::fields();
 
         $request->validate(DocumentSchema::rules($fields), [], DocumentSchema::attributes($fields));
+
+        // Moving a document into another class needs manage rights there too.
+        if ($request->filled('document_type_id')) {
+            $this->ensureCanFileInto($request->input('document_type_id'));
+        }
 
         $document->update(DocumentSchema::payload($fields, $request->all(), $document));
 
@@ -188,10 +219,32 @@ class DocumentController extends Controller
 
     public function destroy(Document $document)
     {
+        $this->authorizeManage($document);
+
         $files = array_filter([$document->file_path, ...$document->codeImagePaths()]);
         if ($files) Storage::disk('public')->delete($files);
         $document->delete();
 
         return redirect()->route('documents.index');
+    }
+
+    /** Only roles with "manage" on the class's folder may edit or delete a document. */
+    private function authorizeManage(Document $document): void
+    {
+        abort_unless(
+            auth()->user()->canManageDocumentType($document->document_type_id),
+            403,
+            'Your role does not have manage access to the folder of this document.',
+        );
+    }
+
+    /** Rejects a document class the user's role may not add documents to. */
+    private function ensureCanFileInto(int|string|null $typeId): void
+    {
+        if (! auth()->user()->canManageDocumentType($typeId)) {
+            throw ValidationException::withMessages([
+                'document_type_id' => 'Your role does not have access to add documents to this class.',
+            ]);
+        }
     }
 }

@@ -59,12 +59,14 @@ export default function DocumentFilter({ filters, onChange, onClear, onAddNew, d
                         >
                             Add New Document
                         </button> */}
-                        <button
-                            onClick={onAddNew}
-                            style={{ padding: '0.47rem 0.85rem', fontSize: '0.82rem', border: '1px solid #e2e8f0', borderRadius: 6, background: '#6366f1', color: '#fff', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, fontWeight: 500 }}
-                        >
-                            Add New Document
-                        </button>
+                        {onAddNew && (
+                            <button
+                                onClick={onAddNew}
+                                style={{ padding: '0.47rem 0.85rem', fontSize: '0.82rem', border: '1px solid #e2e8f0', borderRadius: 6, background: '#6366f1', color: '#fff', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, fontWeight: 500 }}
+                            >
+                                Add New Document
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>
