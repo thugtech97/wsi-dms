@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Document;
+use App\Models\SystemSetting;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -31,7 +32,7 @@ class AuditTrailController extends Controller
                 'newValues'    => $a->new_values,
                 'ipAddress'    => $a->ip_address,
                 'userAgent'    => $a->user_agent,
-                'dateTime'     => $a->created_at->format('M d, Y h:i A'),
+                'dateTime'     => SystemSetting::formatDateTime($a->created_at),
             ]);
 
         return Inertia::render('AuditTrail/Index', [

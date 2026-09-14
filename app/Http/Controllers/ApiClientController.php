@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ApiClient;
+use App\Models\SystemSetting;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -33,7 +34,7 @@ class ApiClientController extends Controller
                     'rate_limit_per_minute' => $c->rate_limit_per_minute,
                     'is_active'             => $c->is_active,
                     'masked_token'          => $c->maskedToken(),
-                    'token_generated_at'    => $c->token_generated_at?->format('M d, Y H:i'),
+                    'token_generated_at'    => SystemSetting::formatDateTime($c->token_generated_at),
                     'last_used_at'          => $c->last_used_at?->diffForHumans(),
                     'last_used_ip'          => $c->last_used_ip,
                     'request_count'         => $c->request_count,

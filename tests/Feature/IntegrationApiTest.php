@@ -107,9 +107,10 @@ it('issues a QR and a barcode that share one number', function () {
 
     $number = str_replace('#QR-', '', $qr->code_id);
 
+    // Both codes carry the one formatted number (Settings → Document Numbering).
     expect($barcode->code_id)->toBe('#BC-' . $number)
-        ->and($qr->code_value)->toBe('DOC-' . $number)
-        ->and($barcode->code_value)->toBe('BC-' . $number);
+        ->and($qr->code_value)->toBe($number)
+        ->and($barcode->code_value)->toBe($number);
 
     Storage::disk('public')->assertExists($qr->image_path);
     Storage::disk('public')->assertExists($barcode->image_path);

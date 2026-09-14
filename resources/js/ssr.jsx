@@ -10,7 +10,8 @@ createServer((page) =>
     createInertiaApp({
         page,
         render: ReactDOMServer.renderToString,
-        title: (title) => `${title} - ${appName}`,
+        // Settings → System Name wins over the build-time name.
+        title: (title) => `${title} - ${page.props?.system?.system_name ?? appName}`,
         resolve: (name) =>
             resolvePageComponent(
                 `./Pages/${name}.jsx`,

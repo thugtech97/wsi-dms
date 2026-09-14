@@ -8,6 +8,7 @@ import DynamicFormFields, {
     fieldIcon,
 } from './DynamicFormFields';
 import { useResponsive } from '@/hooks/useResponsive';
+import { useSystem } from '@/hooks/useSystem';
 import {
     CodeCell,
     CodePanel,
@@ -244,8 +245,9 @@ function DocumentViewModal({ doc, documentTypes, users, roles, formFields = [], 
     const [deleting, setDeleting]           = useState(false);
     const [editing, setEditing]             = useState(false);
     const { isMobile }                      = useResponsive();
+    const system                            = useSystem();
 
-    const sources = { document_types: documentTypes, users, roles };
+    const sources = { document_types: documentTypes, users, roles, system };
 
     // Everything on the form that the fixed cards above don't already cover.
     const SHOWN_ABOVE  = ['label', 'document_type_id', 'department'];

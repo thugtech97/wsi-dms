@@ -5,6 +5,7 @@ namespace App\Support;
 use App\Models\Document;
 use App\Models\DocumentFormField;
 use App\Models\DocumentType;
+use App\Models\SystemSetting;
 use App\Models\User;
 use Illuminate\Support\Collection;
 use Spatie\Permission\Models\Role;
@@ -155,7 +156,7 @@ class DocumentSchema
 
         if ($field->type === 'date') {
             try {
-                return \Carbon\Carbon::parse($value)->format('M d, Y');
+                return SystemSetting::formatDate(\Carbon\Carbon::parse($value));
             } catch (\Throwable) {
                 return (string) $value;
             }

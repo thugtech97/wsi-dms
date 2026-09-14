@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $title }} — Ombudsman DMS</title>
+    <title>{{ $title }} — {{ config('app.name') }}</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -157,12 +157,13 @@
         </button>
     </div>
 
+    @php [$brandName, $brandSub] = \App\Models\SystemSetting::brand(); @endphp
     {{-- Header --}}
     <div class="print-header">
         <div class="brand">
             <img class="brand-logo" src="{{ asset('img/ombudsman-logo.webp') }}" alt="Office of the Ombudsman seal">
             <div>
-                <div class="brand-name">Office of the Ombudsman<br><span style="font-weight:500">Document Barcode and QR Code System</span></div>
+                <div class="brand-name">{{ $brandName }}@if ($brandSub)<br><span style="font-weight:500">{{ $brandSub }}</span>@endif</div>
                 <div class="brand-sub">Administrative Report · Confidential</div>
             </div>
         </div>
@@ -216,7 +217,7 @@
 
     {{-- Footer --}}
     <div class="print-footer">
-        <span>Office of the Ombudsman - Document Barcode and QR Code System &mdash; {{ $title }}</span>
+        <span>{{ config('app.name') }} &mdash; {{ $title }}</span>
         <span>Generated {{ $generated }} &bull; {{ $total }} record(s) &bull; Admin Report</span>
     </div>
 

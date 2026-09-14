@@ -6,6 +6,8 @@
  * never be reordered, hidden or deleted.
  */
 
+import { formatDate } from '@/hooks/useSystem';
+
 export const inputStyle = { width: '100%', padding: '0.5rem 0.75rem', fontSize: '0.85rem', border: '1px solid #cbd5e1', borderRadius: 6, color: '#1e293b', outline: 'none', boxSizing: 'border-box', background: '#fff' };
 export const labelStyle = { fontWeight: 500, fontSize: '0.8rem', color: '#64748b', display: 'block', marginBottom: '0.35rem' };
 
@@ -78,10 +80,8 @@ export function formatFieldValue(field, value, sources = {}) {
     }
 
     if (field.type === 'date') {
-        const d = new Date(value);
-        return isNaN(d.getTime())
-            ? value
-            : d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: '2-digit' });
+        // sources.system carries Settings → Date Format; the built-in default otherwise.
+        return formatDate(value, sources.system, { dateOnly: true });
     }
 
     return String(value);

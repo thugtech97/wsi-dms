@@ -1,7 +1,9 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import DmsGuestLayout from '@/Layouts/DmsGuestLayout';
+import { useSystem } from '@/hooks/useSystem';
 
 export default function Login({ status, canResetPassword }) {
+    const { remember_me: rememberEnabled } = useSystem();
     const { data, setData, post, processing, errors, reset } = useForm({
         email: '',
         password: '',
@@ -48,15 +50,17 @@ export default function Login({ status, canResetPassword }) {
                 </Field>
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: '0.85rem', color: '#475569' }}>
-                        <input
-                            type="checkbox"
-                            checked={data.remember}
-                            onChange={e => setData('remember', e.target.checked)}
-                            style={{ accentColor: '#6366f1', width: 15, height: 15 }}
-                        />
-                        Remember me
-                    </label>
+                    {rememberEnabled ? (
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: '0.85rem', color: '#475569' }}>
+                            <input
+                                type="checkbox"
+                                checked={data.remember}
+                                onChange={e => setData('remember', e.target.checked)}
+                                style={{ accentColor: '#6366f1', width: 15, height: 15 }}
+                            />
+                            Remember me
+                        </label>
+                    ) : <span />}
                     {canResetPassword && (
                         <Link href={route('password.request')} style={{ fontSize: '0.82rem', color: '#6366f1', textDecoration: 'none', fontWeight: 500 }}>
                             Forgot password?

@@ -1,9 +1,11 @@
 import { useResponsive } from '@/hooks/useResponsive';
-import { APP_NAME, APP_SUBTITLE } from '@/Components/Dms/OmbudsmanLogo';
+import { APP_NAME } from '@/Components/Dms/OmbudsmanLogo';
+import { useSystem } from '@/hooks/useSystem';
 import AuthSeal from '@/Components/Dms/AuthSeal';
 
 export default function DmsGuestLayout({ children, title, subtitle }) {
     const { isMobile } = useResponsive();
+    const { brand_subtitle } = useSystem();
 
     return (
         <div style={{ minHeight: '100vh', display: 'flex', fontFamily: "'Inter', sans-serif" }}>
@@ -26,7 +28,7 @@ export default function DmsGuestLayout({ children, title, subtitle }) {
                     <div style={{ marginBottom: '2.25rem', position: 'relative' }}>
                         <AuthSeal size={168} style={{ marginBottom: '1.35rem' }} />
                         <h1 style={{ fontSize: '1.45rem', fontWeight: 700, lineHeight: 1.35, marginBottom: '0.6rem', letterSpacing: '-0.01em', color: '#1e1b4b' }}>
-                            Office of the<br />Ombudsman<br />Document Barcode and QR Code System
+                            Office of the<br />Ombudsman{brand_subtitle && <><br />{brand_subtitle}</>}
                         </h1>
                         <p style={{ color: '#3730a3', fontSize: '0.875rem', fontWeight: 500 }}>
                             Secure. Organized. Accessible.
@@ -34,7 +36,7 @@ export default function DmsGuestLayout({ children, title, subtitle }) {
                     </div>
 
                     <p style={{ position: 'absolute', bottom: '1.5rem', left: '3.5rem', fontSize: '0.7rem', color: '#5b6b8c' }}>
-                        © 2026 Office of the Ombudsman. All rights reserved.
+                        © {new Date().getFullYear()} {APP_NAME}. All rights reserved.
                     </p>
                 </div>
             )}
@@ -53,7 +55,7 @@ export default function DmsGuestLayout({ children, title, subtitle }) {
                         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
                             <AuthSeal size={96} style={{ margin: '0 auto 0.75rem' }} />
                             <p style={{ fontWeight: 700, fontSize: '0.9rem', color: '#0f172a' }}>{APP_NAME}</p>
-                            <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: 2 }}>{APP_SUBTITLE}</p>
+                            {brand_subtitle && <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: 2 }}>{brand_subtitle}</p>}
                         </div>
                     )}
 

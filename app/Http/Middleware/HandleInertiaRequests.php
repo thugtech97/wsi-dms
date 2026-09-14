@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\SystemSetting;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 use Tighten\Ziggy\Ziggy;
@@ -44,6 +45,8 @@ class HandleInertiaRequests extends Middleware
                 // Plain API token, shown once right after it is issued.
                 'newToken' => fn () => $request->session()->get('newToken'),
             ],
+            // General Settings the browser applies: branding, date formats, idle logout.
+            'system' => fn () => SystemSetting::forClient(),
             'unreadNotificationsCount' => fn () => $request->user()
                 ? $request->user()->unreadNotifications()->count()
                 : 0,

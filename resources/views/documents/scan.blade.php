@@ -95,12 +95,13 @@
     </style>
 </head>
 <body>
+    @php [$brandName, $brandSub] = \App\Models\SystemSetting::brand(); @endphp
     <div class="sheet">
         <div class="brand">
             <img src="{{ asset('img/ombudsman-logo.webp') }}" alt="Office of the Ombudsman seal">
             <div>
-                <div class="brand-name">Office of the Ombudsman</div>
-                <div class="brand-sub">Document Barcode and QR Code System</div>
+                <div class="brand-name">{{ $brandName }}</div>
+                @if ($brandSub)<div class="brand-sub">{{ $brandSub }}</div>@endif
             </div>
         </div>
 
@@ -125,7 +126,7 @@
                     $rows = array_filter([
                         'Document Type' => $document->documentType?->name,
                         'Department'    => $document->department,
-                        'Document Date' => $document->created_at->format('M d, Y'),
+                        'Document Date' => \App\Models\SystemSetting::formatDate($document->created_at),
                     ], fn ($v) => $v !== null && $v !== '' && $v !== '—');
                 @endphp
 
@@ -185,8 +186,8 @@
         </div>
 
         <p class="foot">
-            Office of the Ombudsman · Document Barcode and QR Code System<br>
-            Scanned {{ now()->format('M d, Y h:i A') }}
+            {{ $brandName }}{{ $brandSub ? ' · ' . $brandSub : '' }}<br>
+            Scanned {{ \App\Models\SystemSetting::formatDateTime(now()) }}
         </p>
     </div>
 </body>

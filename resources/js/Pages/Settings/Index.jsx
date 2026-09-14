@@ -4,11 +4,13 @@ import DmsLayout from '@/Layouts/DmsLayout';
 import DocumentFormBuilder from '@/Components/Dms/DocumentFormBuilder';
 import DocumentTypesPanel from '@/Components/Dms/DocumentTypesPanel';
 import FoldersPanel from '@/Components/Dms/FoldersPanel';
+import { useConfirm } from '@/Components/Dms/ConfirmDialog';
 
 const TABS = [['general', 'General Settings'], ['form', 'Document Form'], ['types', 'Document Types'], ['folders', 'Folders'], ['code', 'Code Format']];
 
-export default function SettingsIndex({ settings, systemInfo, formFields = [], fieldTypes = [], choiceTypes = [], documentTypes = [], folders = [], availableRoles = [], tab = 'general' }) {
+export default function SettingsIndex({ settings, systemInfo, formFields = [], fieldTypes = [], choiceTypes = [], documentTypes = [], folders = [], availableRoles = [], tab = 'general', numberingNext = 1, lastBackup = null }) {
     const { flash } = usePage().props;
+    const { confirm, notify, dialog } = useConfirm();
 
     const s = (key, def = '') => settings[key] ?? def;
 
@@ -20,6 +22,7 @@ export default function SettingsIndex({ settings, systemInfo, formFields = [], f
         time_format:          s('time_format',          '12-Hour (hh:mm A)'),
         session_timeout:      s('session_timeout',      '30'),
         idle_logout_warning:  s('idle_logout_warning',  '5'),
+        remember_me:          s('remember_me',          '1'),
         numbering_format:     s('numbering_format',     'INV-{YYYY}-{NNNN}'),
         max_file_size:        s('max_file_size',        '20'),
         allowed_types:        s('allowed_types',        'pdf, docx, xlsx, pptx, jpg, png, txt'),
@@ -29,6 +32,7 @@ export default function SettingsIndex({ settings, systemInfo, formFields = [], f
     });
 
     const [saving, setSaving]     = useState(false);
+    const [backingUp, setBackingUp] = useState(false);
     const [activeTab, setActiveTab] = useState(TABS.some(([k]) => k === tab) ? tab : 'general');
 
     function set(key, value) { setForm(f => ({ ...f, [key]: value })); }
@@ -50,19 +54,62 @@ export default function SettingsIndex({ settings, systemInfo, formFields = [], f
             onFinish: () => setSaving(false),
             preserveScroll: true,
             preserveState: true,
-            only: ['settings', 'flash'],
+            only: ['settings', 'flash', 'system'],
         });
+    }
+
+    async function resetCounter() {
+        if (!await confirm({
+            title:        'Reset the numbering counter?',
+            message:      'The next document will be numbered from 1 again. Numbers already issued are kept, and any clash is skipped automatically.',
+            confirmLabel: 'Reset Counter',
+            tone:         'warning',
+        })) return;
+        router.post(route('settings.numbering.reset'), {}, { preserveScroll: true, only: ['numberingNext', 'flash'] });
+    }
+
+    // The archive comes back as a file, which Inertia cannot receive, so it is
+    // fetched directly and handed to the browser as a download.
+    async function backupNow() {
+        setBackingUp(true);
+        try {
+            const res  = await window.axios.post(route('settings.backup'), {}, { responseType: 'blob' });
+            const name = /filename="?([^"]+)"?/.exec(res.headers['content-disposition'] ?? '')?.[1] ?? 'backup.zip';
+            const url  = URL.createObjectURL(res.data);
+            const a    = Object.assign(document.createElement('a'), { href: url, download: name });
+            document.body.appendChild(a); a.click(); a.remove();
+            URL.revokeObjectURL(url);
+            router.reload({ only: ['lastBackup'] });
+        } catch {
+            await notify({ title: 'Backup failed', message: 'The backup archive could not be written. Check the server log for details.', tone: 'danger' });
+        } finally {
+            setBackingUp(false);
+        }
+    }
+
+    async function resetSystemSettings() {
+        if (!await confirm({
+            title:        'Reset all system settings?',
+            message:      'Every General Settings value goes back to its default: system name, timezone, formats, session limits, numbering and backup schedule.',
+            detail:       'Document form fields, document types and folders are not affected.',
+            confirmLabel: 'Reset Settings',
+            tone:         'danger',
+        })) return;
+        router.post(route('settings.reset'));
     }
 
     const storagePercent = systemInfo.storageTotalMb > 0
         ? Math.min(100, Math.round((systemInfo.storageUsedMb / systemInfo.storageTotalMb) * 100))
         : 0;
 
-    // Numbering preview
-    const preview = form.numbering_format
-        .replace('{YYYY}', new Date().getFullYear())
-        .replace('{MM}', String(new Date().getMonth() + 1).padStart(2, '0'))
-        .replace('{NNNN}', '0001');
+    // Numbering preview — the same tokens DocumentCodeGenerator::formatNumber() renders.
+    const today   = new Date();
+    const preview = (form.numbering_format.includes('{N') ? form.numbering_format : `${form.numbering_format}-{NNNN}`)
+        .replace('{YYYY}', today.getFullYear())
+        .replace('{YY}',   String(today.getFullYear()).slice(-2))
+        .replace('{MM}',   String(today.getMonth() + 1).padStart(2, '0'))
+        .replace('{DD}',   String(today.getDate()).padStart(2, '0'))
+        .replace(/\{(N+)\}/g, (_, n) => String(numberingNext).padStart(n.length, '0'));
 
     return (
         <DmsLayout activePage="Settings">
@@ -169,7 +216,7 @@ export default function SettingsIndex({ settings, systemInfo, formFields = [], f
                                 </Field>
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 4 }}>
                                     <span style={{ fontSize: '0.82rem', fontWeight: 500, color: '#334155' }}>Remember Me</span>
-                                    <Toggle checked={true} />
+                                    <Toggle checked={form.remember_me === '1'} onChange={v => set('remember_me', v ? '1' : '0')} />
                                 </div>
                             </Card>
 
@@ -189,9 +236,10 @@ export default function SettingsIndex({ settings, systemInfo, formFields = [], f
                                     </div>
                                 </Field>
                                 <Field label={<>Reset Sequence <HelpIcon /></>}>
-                                    <button type="button" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0.45rem 0.85rem', border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontSize: '0.78rem', fontWeight: 700, color: '#475569', cursor: 'pointer' }}>
+                                    <button type="button" onClick={resetCounter} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0.45rem 0.85rem', border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontSize: '0.78rem', fontWeight: 700, color: '#475569', cursor: 'pointer' }}>
                                         <RefreshIcon /> Reset Counter
                                     </button>
+                                    <p style={{ fontSize: '0.72rem', color: '#94a3b8', margin: '6px 0 0' }}>Next number: {numberingNext}</p>
                                 </Field>
                             </Card>
 
@@ -227,9 +275,12 @@ export default function SettingsIndex({ settings, systemInfo, formFields = [], f
                                         ['7','7 Days'],['14','14 Days'],['30','30 Days'],['90','90 Days'],
                                     ]} />
                                 </Field>
-                                <button type="button" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '0.5rem 1rem', border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontSize: '0.78rem', fontWeight: 700, color: '#475569', cursor: 'pointer' }}>
-                                    <DownloadIcon /> Backup Now
+                                <button type="button" onClick={backupNow} disabled={backingUp} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '0.5rem 1rem', border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontSize: '0.78rem', fontWeight: 700, color: '#475569', cursor: backingUp ? 'wait' : 'pointer', opacity: backingUp ? 0.7 : 1 }}>
+                                    <DownloadIcon /> {backingUp ? 'Preparing backup…' : 'Backup Now'}
                                 </button>
+                                <p style={{ fontSize: '0.72rem', color: '#94a3b8', margin: 0, textAlign: 'center' }}>
+                                    {lastBackup ? `Last backup: ${lastBackup}` : 'No backups yet.'}
+                                </p>
                             </Card>
 
                         </div>
@@ -276,7 +327,7 @@ export default function SettingsIndex({ settings, systemInfo, formFields = [], f
                                             <span style={{ color: '#94a3b8' }}>{a.icon}</span>{a.label}
                                           </button>
                                 ))}
-                                <button type="button" style={{ ...qaStyle, borderColor: '#fee2e2', background: 'rgba(254,242,242,0.3)', color: '#dc2626', marginTop: 8 }}
+                                <button type="button" onClick={resetSystemSettings} style={{ ...qaStyle, borderColor: '#fee2e2', background: 'rgba(254,242,242,0.3)', color: '#dc2626', marginTop: 8 }}
                                     onMouseEnter={e => e.currentTarget.style.background = '#fef2f2'}
                                     onMouseLeave={e => e.currentTarget.style.background = 'rgba(254,242,242,0.3)'}>
                                     <span style={{ color: '#dc2626' }}><DangerIcon /></span> Reset System Settings
@@ -308,6 +359,8 @@ export default function SettingsIndex({ settings, systemInfo, formFields = [], f
                 {activeTab === 'code' && <CodeCustomizer />}
 
             </div>
+
+            {dialog}
         </DmsLayout>
     );
 }

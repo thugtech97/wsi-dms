@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\SystemSetting;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -24,7 +25,7 @@ class UserController extends Controller
                 'email'          => $u->email,
                 'role'           => $u->roles->first()?->name ?? 'user',
                 'documents_count'=> $u->documents_count,
-                'created_at'     => $u->created_at->format('M d, Y'),
+                'created_at'     => SystemSetting::formatDate($u->created_at),
             ]);
 
         return Inertia::render('Users/Index', [

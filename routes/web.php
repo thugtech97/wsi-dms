@@ -29,6 +29,9 @@ Route::get('/d/{code}', [DocumentController::class, 'resolve'])
     ->name('documents.resolve');
 
 Route::middleware(['auth', 'verified'])->group(function () {
+    // Touched by the idle-logout timer so an active page keeps its server session.
+    Route::get('/session/ping', fn () => response()->noContent())->name('session.ping');
+
     // Dashboard (admin only)
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
@@ -72,6 +75,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Settings (admin only)
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
     Route::post('/settings', [SettingsController::class, 'update'])->name('settings.update');
+    Route::post('/settings/reset', [SettingsController::class, 'reset'])->name('settings.reset');
+    Route::post('/settings/numbering/reset', [SettingsController::class, 'resetSequence'])->name('settings.numbering.reset');
+    Route::post('/settings/backup', [SettingsController::class, 'backup'])->name('settings.backup');
 
     // Document form builder (admin only)
     Route::post('/settings/document-fields', [DocumentFormFieldController::class, 'store'])->name('document-fields.store');

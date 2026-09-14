@@ -6,6 +6,7 @@ use App\Models\Document;
 use App\Models\DocumentCode;
 use App\Models\DocumentFormField;
 use App\Models\DocumentType;
+use App\Models\SystemSetting;
 use App\Models\User;
 use Spatie\Permission\Models\Role;
 use App\Notifications\DocumentUploadedNotification;
@@ -46,8 +47,8 @@ class DocumentController extends Controller
                 'type'              => $d->documentType->name,
                 'document_type_id'  => $d->document_type_id,
                 'department'        => $d->department ?? '—',
-                'documentDate'      => $d->created_at->format('M d, Y'),
-                'createdAt'         => $d->created_at->format('M d, Y · g:i A'),
+                'documentDate'      => SystemSetting::formatDate($d->created_at),
+                'createdAt'         => SystemSetting::formatDateTime($d->created_at, ' · '),
                 'owner'             => $d->owner->name,
                 'codes'             => $d->codes->map->toDisplayArray()->all(),
                 'fileUrl'           => $d->file_path ? url('storage/' . $d->file_path) : null,

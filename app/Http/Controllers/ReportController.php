@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Document;
 use App\Models\DocumentType;
+use App\Models\SystemSetting;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -32,7 +33,7 @@ class ReportController extends Controller
                 }
                 return [
                     'user'         => $a->user?->name ?? 'System',
-                    'dateTime'     => $a->created_at->format('M d, Y h:i A'),
+                    'dateTime'     => SystemSetting::formatDateTime($a->created_at),
                     'activity'     => $this->formatEvent($a->event, $a->auditable_type),
                     'documentName' => $doc?->name ?? ($a->new_values['name'] ?? '—'),
                     'documentType' => $doc?->documentType?->name ?? '—',
@@ -55,7 +56,7 @@ class ReportController extends Controller
                 'type'         => $d->documentType->name,
                 'department'   => $d->department ?? '—',
                 'owner'        => $d->owner->name,
-                'documentDate' => $d->created_at->format('M d, Y'),
+                'documentDate' => SystemSetting::formatDate($d->created_at),
             ]);
 
         return Inertia::render('Reports/Index', [
@@ -85,7 +86,7 @@ class ReportController extends Controller
                     : null;
                 return [
                     'user'         => $a->user?->name ?? 'System',
-                    'dateTime'     => $a->created_at->format('M d, Y h:i A'),
+                    'dateTime'     => SystemSetting::formatDateTime($a->created_at),
                     'activity'     => $this->formatEvent($a->event, $a->auditable_type),
                     'documentName' => $doc?->name ?? ($a->new_values['name'] ?? '—'),
                     'documentType' => $doc?->documentType?->name ?? '—',
@@ -103,7 +104,7 @@ class ReportController extends Controller
             'headers'   => ['User', 'Date & Time', 'Activity', 'Document Name', 'Document Type'],
             'rows'      => $rows->map(fn ($r) => [$r['user'], $r['dateTime'], $r['activity'], $r['documentName'], $r['documentType']])->all(),
             'filters'   => $filters,
-            'generated' => now()->format('M d, Y h:i A'),
+            'generated' => SystemSetting::formatDateTime(now()),
             'total'     => $rows->count(),
         ]);
     }
@@ -127,7 +128,7 @@ class ReportController extends Controller
                 $d->documentType->name,
                 $d->department ?? '—',
                 $d->owner->name,
-                $d->created_at->format('M d, Y'),
+                SystemSetting::formatDate($d->created_at),
             ]);
 
         $filters = [
@@ -143,7 +144,7 @@ class ReportController extends Controller
             'headers'   => ['Code IDs', 'Label', 'Document Type', 'Department', 'Added By', 'Document Date'],
             'rows'      => $rows->all(),
             'filters'   => $filters,
-            'generated' => now()->format('M d, Y h:i A'),
+            'generated' => SystemSetting::formatDateTime(now()),
             'total'     => $rows->count(),
         ]);
     }

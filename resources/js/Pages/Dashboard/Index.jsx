@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import DmsLayout from '@/Layouts/DmsLayout';
+import { useSystem, formatDate } from '@/hooks/useSystem';
 
 // Metric card color palette — cycles if more than 4 types
 const CARD_THEMES = [
@@ -14,6 +15,7 @@ const CARD_THEMES = [
 const CHART_COLORS = ['#22c55e','#6366f1','#f59e0b','#38bdf8','#f43f5e','#a78bfa'];
 
 export default function Dashboard({ docsByType, chartData, recentAudits, filters }) {
+    const system = useSystem();
     return (
         <DmsLayout activePage="Dashboard">
             <Head title="Dashboard" />
@@ -29,7 +31,7 @@ export default function Dashboard({ docsByType, chartData, recentAudits, filters
                         that will not wrap keeps it beside the label. */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.78rem', color: '#94a3b8', fontWeight: 500, whiteSpace: 'nowrap', flexShrink: 0, paddingTop: 2 }}>
                         <CalendarIcon />
-                        {rangeLabel(filters)}
+                        {rangeLabel(filters, system)}
                     </div>
                 </div>
 
@@ -68,7 +70,7 @@ export default function Dashboard({ docsByType, chartData, recentAudits, filters
                 {/* ── Row 2: Charts ─────────────────────────────── */}
                 <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '0.75rem', marginBottom: '0.75rem' }}>
                     <ChartCard title="File Indexing Velocity Trend" icon={<LineChartIcon />} action={
-                        <span style={{ fontSize: '0.72rem', border: '1px solid #e2e8f0', borderRadius: 4, padding: '0.15rem 0.5rem', color: '#475569' }}>{rangeLabel(filters)}</span>
+                        <span style={{ fontSize: '0.72rem', border: '1px solid #e2e8f0', borderRadius: 4, padding: '0.15rem 0.5rem', color: '#475569' }}>{rangeLabel(filters, system)}</span>
                     }>
                         <LineChart labels={chartData.uploadsLabels} counts={chartData.uploadsCounts} />
                     </ChartCard>
@@ -104,22 +106,19 @@ const PRESETS = [
 ];
 
 /** How the active range reads in the header and on the chart badge. */
-function rangeLabel(filters) {
+function rangeLabel(filters, system) {
     if (!filters) return '';
     if (filters.preset === 'custom') {
-        if (filters.from && filters.to) return `${formatDay(filters.from)} – ${formatDay(filters.to)}`;
-        if (filters.from) return `From ${formatDay(filters.from)}`;
-        if (filters.to)   return `Up to ${formatDay(filters.to)}`;
+        if (filters.from && filters.to) return `${formatDay(filters.from, system)} – ${formatDay(filters.to, system)}`;
+        if (filters.from) return `From ${formatDay(filters.from, system)}`;
+        if (filters.to)   return `Up to ${formatDay(filters.to, system)}`;
         return 'All time';
     }
     return PRESETS.find(p => p.key === filters.preset)?.label ?? 'Last 7 days';
 }
 
-function formatDay(iso) {
-    const d = new Date(`${iso}T00:00:00`);
-    return Number.isNaN(d.valueOf())
-        ? iso
-        : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+function formatDay(iso, system) {
+    return formatDate(iso, system, { dateOnly: true });
 }
 
 /**

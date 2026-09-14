@@ -4,7 +4,9 @@ namespace App\Services;
 
 use App\Models\Document;
 use App\Models\DocumentCode;
+use App\Models\SystemSetting;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Picqer\Barcode\BarcodeGeneratorSVG;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
@@ -13,6 +15,10 @@ use SimpleSoftwareIO\QrCode\Facades\QrCode;
  * Issues the tracking codes for a document and writes their images. A document
  * may carry a QR code, a barcode, or both; when it carries both they share one
  * number, so either one scans back to the same document.
+ *
+ * Auto-generated numbers follow Settings → Document Numbering, e.g.
+ * INV-{YYYY}-{NNNN} counts up as INV-2026-0001, INV-2026-0002, …; with the
+ * format cleared they fall back to the historical random 5-digit number.
  *
  * Shared by the web form and the public API so both produce identical codes.
  */
@@ -31,10 +37,17 @@ class DocumentCodeGenerator
         $types = $this->normaliseTypes($types);
 
         // A shared number keeps #QR-12345 and #BC-12345 on the same document.
-        $number = ($value === null || $value === '') ? $this->uniqueNumber() : null;
+        // A formatted number (INV-2026-0001) is encoded as-is; the legacy
+        // random number keeps the DOC-/BC- prefixes it always had.
+        $number = $prefixed = null;
+        if ($value === null || $value === '') {
+            $format   = self::numberingFormat();
+            $prefixed = $format === '';
+            $number   = $prefixed ? $this->uniqueNumber() : $this->uniqueFormattedNumber($format);
+        }
 
         return collect($types)->map(fn (string $type) => $document->codes()->create(
-            $this->build($type, $value, $number, multiple: count($types) > 1),
+            $this->build($type, $value, $number, $prefixed, multiple: count($types) > 1),
         ))->values();
     }
 
@@ -55,7 +68,7 @@ class DocumentCodeGenerator
     /**
      * @return array{type: string, code_id: string, code_value: string, image_path: string}
      */
-    private function build(string $type, ?string $value, ?string $number, bool $multiple): array
+    private function build(string $type, ?string $value, ?string $number, ?bool $prefixed, bool $multiple): array
     {
         $isQr = $type === 'QR';
 
@@ -66,9 +79,9 @@ class DocumentCodeGenerator
             $codeId = $multiple ? ($isQr ? '#QR-' : '#BC-') . $value : $value;
             $slug   = $this->slug($value);
         } else {
-            $codeValue = ($isQr ? 'DOC-' : 'BC-') . $number;
+            $codeValue = $prefixed ? ($isQr ? 'DOC-' : 'BC-') . $number : $number;
             $codeId    = ($isQr ? '#QR-' : '#BC-') . $number;
-            $slug      = $number;
+            $slug      = $prefixed ? $number : $this->slug($number);
         }
 
         $path = 'codes/' . ($isQr ? 'qr' : 'bc') . "-{$slug}.svg";
@@ -116,6 +129,67 @@ class DocumentCodeGenerator
         } while (DocumentCode::whereIn('code_id', ['#QR-' . $number, '#BC-' . $number])->exists());
 
         return $number;
+    }
+
+    /**
+     * The next number in the admin's format. The counter only moves forward,
+     * so after a Reset Counter it simply skips past numbers already issued.
+     */
+    private function uniqueFormattedNumber(string $format): string
+    {
+        do {
+            $number = self::formatNumber($format, $this->nextSequence());
+        } while (DocumentCode::whereIn('code_id', ['#QR-' . $number, '#BC-' . $number])
+            ->orWhere('code_value', $number)->exists());
+
+        return $number;
+    }
+
+    /** The configured format, guaranteed to carry a counter token. */
+    public static function numberingFormat(): string
+    {
+        $format = trim((string) SystemSetting::get('numbering_format', ''));
+
+        if ($format === '') {
+            return '';
+        }
+
+        return preg_match('/\{N+\}/', $format) ? $format : $format . '-{NNNN}';
+    }
+
+    /**
+     * Render one number: {YYYY} {YY} {MM} {DD} take today's date in the
+     * display timezone, and a run of N is the counter zero-padded to its width.
+     */
+    public static function formatNumber(string $format, int $sequence): string
+    {
+        $today = now(SystemSetting::timezone());
+
+        $number = strtr($format, [
+            '{YYYY}' => $today->format('Y'),
+            '{YY}'   => $today->format('y'),
+            '{MM}'   => $today->format('m'),
+            '{DD}'   => $today->format('d'),
+        ]);
+
+        return preg_replace_callback(
+            '/\{(N+)\}/',
+            fn ($m) => str_pad((string) $sequence, strlen($m[1]), '0', STR_PAD_LEFT),
+            $number,
+        );
+    }
+
+    /** Advance the shared counter under a row lock so two uploads never share a number. */
+    private function nextSequence(): int
+    {
+        return DB::transaction(function () {
+            $row  = SystemSetting::lockForUpdate()->firstOrCreate(['key' => 'numbering_sequence'], ['value' => '0']);
+            $next = (int) $row->value + 1;
+            $row->update(['value' => (string) $next]);
+            SystemSetting::flush();
+
+            return $next;
+        });
     }
 
     private function slug(string $value): string

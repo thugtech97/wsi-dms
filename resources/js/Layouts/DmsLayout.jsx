@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, usePage, router } from '@inertiajs/react';
 import { useResponsive } from '@/hooks/useResponsive';
-import OmbudsmanLogo, { APP_NAME, APP_SUBTITLE } from '@/Components/Dms/OmbudsmanLogo';
+import OmbudsmanLogo, { APP_NAME } from '@/Components/Dms/OmbudsmanLogo';
+import IdleLogout from '@/Components/Dms/IdleLogout';
+import { useSystem } from '@/hooks/useSystem';
 
 const ALL_NAV_ITEMS = [
     { label: 'Dashboard',       icon: <DashboardIcon />, routeName: 'dashboard',            adminOnly: true },
@@ -17,6 +19,7 @@ const ALL_NAV_ITEMS = [
 
 export default function DmsLayout({ activePage, onScanChange, onSearchEnter, children }) {
     const { auth, unreadNotificationsCount } = usePage().props;
+    const { brand_subtitle } = useSystem();
     const { isMobile, isTablet } = useResponsive();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [scanCount, setScanCount]     = useState(() => typeof window === 'undefined' ? 0 : Number(localStorage.getItem('dms-scan-count') ?? 0));
@@ -130,7 +133,7 @@ export default function DmsLayout({ activePage, onScanChange, onSearchEnter, chi
                                 {APP_NAME}
                             </div>
                             <div style={{ fontSize: isMobile ? '0.62rem' : '0.72rem', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                {APP_SUBTITLE}
+                                {brand_subtitle}
                             </div>
                         </div>
                     </Link>
@@ -283,6 +286,8 @@ export default function DmsLayout({ activePage, onScanChange, onSearchEnter, chi
                     {children}
                 </main>
             </div>
+
+            <IdleLogout />
         </div>
     );
 }
