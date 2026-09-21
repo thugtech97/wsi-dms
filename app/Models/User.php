@@ -65,6 +65,12 @@ class User extends Authenticatable implements Auditable
         return $ids === null || in_array((int) $typeId, $ids, true);
     }
 
+    /** Folders (departments) this user may file documents into. */
+    public function canManageFolder(int|string|null $folderId): bool
+    {
+        return $this->isAdmin() || in_array((int) $folderId, $this->folderIds('manage'), true);
+    }
+
     /**
      * Where this user lands after signing in. The dashboard is admin-only and
      * aborts 403 for everyone else, so other roles start on the documents list

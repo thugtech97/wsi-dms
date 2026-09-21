@@ -125,7 +125,7 @@
                     // Same order as the printed label; blank rows are dropped.
                     $rows = array_filter([
                         'Document Type' => $document->documentType?->name,
-                        'Department'    => $document->department,
+                        'Department'    => $document->folder?->name,
                         'Document Date' => \App\Models\SystemSetting::formatDate($document->created_at),
                     ], fn ($v) => $v !== null && $v !== '' && $v !== '—');
                 @endphp

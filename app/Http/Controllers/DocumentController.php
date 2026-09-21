@@ -6,6 +6,7 @@ use App\Models\Document;
 use App\Models\DocumentCode;
 use App\Models\DocumentFormField;
 use App\Models\DocumentType;
+use App\Models\Folder;
 use App\Models\SystemSetting;
 use App\Models\User;
 use Spatie\Permission\Models\Role;
@@ -32,13 +33,13 @@ class DocumentController extends Controller
 
         // Folder grants decide what a non-admin sees: documents in classes their
         // role can read, plus anything they added themselves.
-        $documents = Document::with(['documentType', 'owner', 'codes'])
+        $documents = Document::with(['documentType', 'folder', 'owner', 'codes'])
             ->when($visible !== null, fn ($q) => $q->where(fn ($q2) => $q2
                 ->whereIn('document_type_id', $visible)
                 ->orWhere('owner_id', $user->id)))
             ->when($request->label,      fn ($q) => $q->where('name', 'like', "%{$request->label}%"))
             ->when($request->type,       fn ($q) => $q->whereHas('documentType', fn ($q2) => $q2->where('name', $request->type)))
-            ->when($request->department, fn ($q) => $q->where('department', 'like', "%{$request->department}%"))
+            ->when($request->department, fn ($q) => $q->whereHas('folder', fn ($q2) => $q2->where('name', 'like', "%{$request->department}%")))
             ->latest()
             ->get()
             ->map(fn ($d) => [
@@ -46,7 +47,8 @@ class DocumentController extends Controller
                 'label'             => $d->name,
                 'type'              => $d->documentType->name,
                 'document_type_id'  => $d->document_type_id,
-                'department'        => $d->department ?? '—',
+                'folder_id'         => $d->folder_id,
+                'department'        => $d->folder?->name ?? '—',
                 'documentDate'      => SystemSetting::formatDate($d->created_at),
                 'createdAt'         => SystemSetting::formatDateTime($d->created_at, ' · '),
                 'owner'             => $d->owner->name,
@@ -72,9 +74,21 @@ class DocumentController extends Controller
                 'can_manage' => $manageable === null || in_array($t->id, $manageable, true),
             ]);
 
+        // Department is the folder itself, offered under the same grants.
+        $folderIds = $user->isAdmin() ? null : $user->folderIds();
+        $folders   = Folder::orderBy('name')
+            ->when($folderIds !== null, fn ($q) => $q->whereKey($folderIds))
+            ->get()
+            ->map(fn ($f) => [
+                'id'         => $f->id,
+                'name'       => $f->name,
+                'can_manage' => $user->canManageFolder($f->id),
+            ]);
+
         return Inertia::render('Documents/Index', [
             'documents'     => $documents,
             'documentTypes' => $documentTypes,
+            'folders'       => $folders,
             'users'         => User::orderBy('name')->get(),
             'roles'         => Role::orderBy('name')->get(),
             'formFields'    => DocumentFormField::active()->ordered()->get()
@@ -132,7 +146,7 @@ class DocumentController extends Controller
             DocumentSchema::attributes($fields),
         );
 
-        $this->ensureCanFileInto($request->input('document_type_id'));
+        $this->ensureCanFileInto($request->input('document_type_id'), $request->input('department'));
 
         $document = Document::create(DocumentSchema::payload($fields, $request->all()) + [
             'file_path'        => null,
@@ -155,9 +169,9 @@ class DocumentController extends Controller
 
         $request->validate(DocumentSchema::rules($fields), [], DocumentSchema::attributes($fields));
 
-        // Moving a document into another class needs manage rights there too.
-        if ($request->filled('document_type_id')) {
-            $this->ensureCanFileInto($request->input('document_type_id'));
+        // Moving a document into another class or department needs manage rights there too.
+        if ($request->filled('document_type_id') || $request->filled('department')) {
+            $this->ensureCanFileInto($request->input('document_type_id'), $request->input('department'));
         }
 
         $document->update(DocumentSchema::payload($fields, $request->all(), $document));
@@ -176,7 +190,7 @@ class DocumentController extends Controller
     {
         $code = DocumentCode::normaliseScanInput($code);
 
-        $match = DocumentCode::with('document.documentType', 'document.owner')
+        $match = DocumentCode::with('document.documentType', 'document.folder', 'document.owner')
             ->where('code_value', $code)
             ->orWhere('code_id', $code)
             ->firstOrFail();
@@ -233,13 +247,33 @@ class DocumentController extends Controller
         );
     }
 
-    /** Rejects a document class the user's role may not add documents to. */
-    private function ensureCanFileInto(int|string|null $typeId): void
+    /**
+     * Rejects a document class or department (folder) the user's role may not
+     * add documents to, and a department that is not the class's own folder.
+     */
+    private function ensureCanFileInto(int|string|null $typeId, int|string|null $folderId = null): void
     {
-        if (! auth()->user()->canManageDocumentType($typeId)) {
+        $user = auth()->user();
+
+        if ($typeId && ! $user->canManageDocumentType($typeId)) {
             throw ValidationException::withMessages([
                 'document_type_id' => 'Your role does not have access to add documents to this class.',
             ]);
+        }
+
+        if ($folderId && ! $user->canManageFolder($folderId)) {
+            throw ValidationException::withMessages([
+                'department' => 'Your role does not have access to add documents to this department.',
+            ]);
+        }
+
+        if ($typeId && $folderId) {
+            $typeFolder = DocumentType::find($typeId)?->folder_id;
+            if ($typeFolder && (int) $typeFolder !== (int) $folderId) {
+                throw ValidationException::withMessages([
+                    'department' => 'This document type belongs to a different department.',
+                ]);
+            }
         }
     }
 }

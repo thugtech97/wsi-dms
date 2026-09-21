@@ -23,7 +23,7 @@ const TD = { padding: '1rem 1.25rem', borderBottom: '1px solid #f1f5f9', fontSiz
 
 const PAGE_SIZES = [10, 25, 50, 100];
 
-export default function DocumentTable({ documents, documentTypes = [], users = [], roles = [], formFields = [] }) {
+export default function DocumentTable({ documents, documentTypes = [], folders = [], users = [], roles = [], formFields = [] }) {
     const [selected, setSelected] = useState(null);
     const [page, setPage]         = useState(1);
     const [perPage, setPerPage]   = useState(PAGE_SIZES[0]);
@@ -104,6 +104,7 @@ export default function DocumentTable({ documents, documentTypes = [], users = [
                 <DocumentViewModal
                     doc={selected}
                     documentTypes={documentTypes}
+                    folders={folders}
                     users={users}
                     roles={roles}
                     formFields={formFields}
@@ -238,7 +239,7 @@ function DocumentRow({ doc, onView, isMobile }) {
 }
 
 // ── Modal ─────────────────────────────────────────────────────────────────────
-function DocumentViewModal({ doc, documentTypes, users, roles, formFields = [], onClose }) {
+function DocumentViewModal({ doc, documentTypes, folders = [], users, roles, formFields = [], onClose }) {
     const codes = doc.codes ?? [];
     const [activeTab,     setActiveTab]     = useState('details');
     const [confirmDelete, setConfirmDelete] = useState(false);
@@ -247,7 +248,7 @@ function DocumentViewModal({ doc, documentTypes, users, roles, formFields = [], 
     const { isMobile }                      = useResponsive();
     const system                            = useSystem();
 
-    const sources = { document_types: documentTypes, users, roles, system };
+    const sources = { document_types: documentTypes, folders, users, roles, system };
 
     // Everything on the form that the fixed cards above don't already cover.
     const SHOWN_ABOVE  = ['label', 'document_type_id', 'department'];
@@ -535,6 +536,7 @@ function DocumentViewModal({ doc, documentTypes, users, roles, formFields = [], 
                 <DocumentEditModal
                     doc={doc}
                     documentTypes={documentTypes.filter(t => t.can_manage !== false)}
+                    folders={folders.filter(f => f.can_manage !== false)}
                     users={users}
                     roles={roles}
                     formFields={formFields}
@@ -546,11 +548,11 @@ function DocumentViewModal({ doc, documentTypes, users, roles, formFields = [], 
     );
 }
 
-function DocumentEditModal({ doc, documentTypes, users, roles, formFields = [], onClose, onSuccess }) {
+function DocumentEditModal({ doc, documentTypes, folders = [], users, roles, formFields = [], onClose, onSuccess }) {
     // Same admin-managed schema as the Add New Document form.
     const { data, setData, put, processing, errors } = useForm(formDataFromDocument(formFields, doc));
 
-    const sources = { document_types: documentTypes, users, roles };
+    const sources = { document_types: documentTypes, folders, users, roles };
 
     function submit(e) {
         e.preventDefault();

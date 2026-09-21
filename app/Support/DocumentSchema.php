@@ -5,6 +5,7 @@ namespace App\Support;
 use App\Models\Document;
 use App\Models\DocumentFormField;
 use App\Models\DocumentType;
+use App\Models\Folder;
 use App\Models\SystemSetting;
 use App\Models\User;
 use Illuminate\Support\Collection;
@@ -93,6 +94,13 @@ class DocumentSchema
 
         $attributes['custom_fields'] = $custom ?: null;
 
+        // A document's department is the folder of its document type. When the
+        // Department field is hidden from the form, or left blank, fill it from
+        // the type so folder-based reports and grants still cover the document.
+        if (empty($attributes['folder_id']) && array_key_exists('document_type_id', $attributes)) {
+            $attributes['folder_id'] = DocumentType::find($attributes['document_type_id'])?->folder_id;
+        }
+
         // The Label field may be hidden or left blank; documents.name is NOT NULL,
         // so an unlabelled document is named after its document class instead.
         $nameSubmitted = array_key_exists('name', $attributes);
@@ -170,6 +178,7 @@ class DocumentSchema
     {
         $rows = match ($field->options_source) {
             'document_types' => DocumentType::pluck('name', 'id'),
+            'folders'        => Folder::pluck('name', 'id'),
             'users'          => User::pluck('name', 'id'),
             'roles'          => Role::pluck('name', 'id'),
             default          => collect($field->options ?? [])->pluck('label', 'value'),
@@ -204,6 +213,7 @@ class DocumentSchema
             'options'     => $f->options_source
                 ? ['source' => $f->options_source, 'endpoint' => match ($f->options_source) {
                     'document_types' => '/api/v1/document-types',
+                    'folders'        => '/api/v1/folders',
                     'users'          => '/api/v1/users',
                     'roles'          => '/api/v1/roles',
                     default          => null,

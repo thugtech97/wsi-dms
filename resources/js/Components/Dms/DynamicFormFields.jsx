@@ -36,8 +36,10 @@ export function formDataFromDocument(fields = [], doc = {}) {
     return fields.reduce((acc, f) => {
         let value = f.column_name ? doc[f.key] : doc.custom_fields?.[f.key];
 
-        // Documents index maps `name` → `label` and shows an em dash for blank departments.
-        if (f.key === 'label') value = doc.label ?? '';
+        // Documents index maps `name` → `label`, `folder_id` → the department's
+        // display name, and shows an em dash for blanks.
+        if (f.key === 'label')      value = doc.label ?? '';
+        if (f.key === 'department') value = doc.folder_id ?? '';
         if (value === '—') value = '';
 
         if (f.type === 'multiselect')   value = Array.isArray(value) ? value : [];
@@ -52,6 +54,7 @@ export function formDataFromDocument(fields = [], doc = {}) {
 /** Read a field's stored value off a document, wherever it lives. */
 export function documentFieldValue(field, doc = {}) {
     if (!field.column_name) return doc.custom_fields?.[field.key];
+    if (field.key === 'department') return doc.folder_id;
     return field.key === 'label' ? doc.label : doc[field.key];
 }
 
@@ -105,6 +108,36 @@ export function resolveOptions(field, sources = {}) {
 }
 
 export default function DynamicFormFields({ fields = [], data, setData, errors = {}, sources = {} }) {
+    // Department is the folder a document type belongs to, so the two dropdowns
+    // stay in step: a chosen department narrows the types to its own, and a
+    // chosen type fills in (or corrects) the department.
+    const types    = sources.document_types ?? [];
+    const folderOf = typeId => types.find(t => String(t.id) === String(typeId))?.folder_id ?? null;
+
+    function optionsFor(field) {
+        if (field.key === 'document_type_id' && data.department) {
+            return resolveOptions(field, {
+                ...sources,
+                document_types: types.filter(t => String(t.folder_id) === String(data.department)),
+            });
+        }
+        return resolveOptions(field, sources);
+    }
+
+    function handleChange(field, value) {
+        if (field.key === 'document_type_id' && 'department' in data) {
+            const folderId = folderOf(value);
+            setData(d => ({ ...d, document_type_id: value, department: folderId ?? d.department }));
+            return;
+        }
+        if (field.key === 'department' && 'document_type_id' in data) {
+            const keepType = String(folderOf(data.document_type_id)) === String(value);
+            setData(d => ({ ...d, department: value, document_type_id: keepType ? d.document_type_id : '' }));
+            return;
+        }
+        setData(field.key, value);
+    }
+
     return fields.map(field => (
         <div key={field.key} style={{ marginBottom: '1rem' }}>
             <label style={labelStyle}>
@@ -115,8 +148,8 @@ export default function DynamicFormFields({ fields = [], data, setData, errors =
             <FieldControl
                 field={field}
                 value={data[field.key]}
-                onChange={v => setData(field.key, v)}
-                options={resolveOptions(field, sources)}
+                onChange={v => handleChange(field, v)}
+                options={optionsFor(field)}
             />
 
             {field.help_text && (

@@ -431,6 +431,7 @@ function ApiReference({ baseUrl }) {
         ['GET',    '/me',                    'Token owner, permissions and usage'],
         ['GET',    '/form-fields',           'Fields this DMS expects when creating a document'],
         ['GET',    '/document-types',        'Valid document_type_id values'],
+        ['GET',    '/folders',               'Valid department values (folder ids)'],
         ['GET',    '/users',                 'Valid allowed_users values'],
         ['GET',    '/roles',                 'Valid allowed_roles values'],
         ['POST',   '/documents',             'Create a document and issue its QR code, barcode, or both'],
@@ -449,7 +450,7 @@ function ApiReference({ baseUrl }) {
   -d '{
     "label": "Purchase Order 2026-118",
     "document_type_id": 1,
-    "department": "Procurement",
+    "department": 3,
     "code_types": ["QR", "Barcode"]
   }'`;
 

@@ -13,9 +13,9 @@ class Document extends Model implements Auditable
 
     protected $fillable = [
         'name',
-        'department',
         'file_path',
         'document_type_id',
+        'folder_id',
         'owner_id',
         'api_client_id',
         'storage_location',
@@ -34,6 +34,7 @@ class Document extends Model implements Auditable
     protected $auditInclude = [
         'name',
         'document_type_id',
+        'folder_id',
         'owner_id',
         'api_client_id',
         'storage_location',
@@ -69,6 +70,12 @@ class Document extends Model implements Auditable
     public function documentType(): BelongsTo
     {
         return $this->belongsTo(DocumentType::class);
+    }
+
+    /** The department this document belongs to — a folder from Settings → Folders. */
+    public function folder(): BelongsTo
+    {
+        return $this->belongsTo(Folder::class);
     }
 
     public function owner(): BelongsTo

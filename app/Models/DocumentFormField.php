@@ -129,6 +129,10 @@ class DocumentFormField extends Model implements Auditable
             $rules = [$this->is_required ? 'required' : 'nullable', 'exists:document_types,id'];
         }
 
+        if ($this->options_source === 'folders') {
+            $rules = [$this->is_required ? 'required' : 'nullable', 'exists:folders,id'];
+        }
+
         // Static choice fields must receive one of their own options.
         if (in_array($this->type, ['select', 'radio'], true) && $this->needsChoices()) {
             $values = collect($this->options ?? [])->pluck('value')->filter()->values()->all();

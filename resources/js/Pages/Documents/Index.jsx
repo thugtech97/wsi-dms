@@ -21,7 +21,7 @@ const matchesCode = (doc, needle) => {
         (c.value ?? '').toLowerCase().includes(code));
 };
 
-export default function DocumentsIndex({ documents, documentTypes, users = [], roles = [], formFields = [], filters: serverFilters, openDocId }) {
+export default function DocumentsIndex({ documents, documentTypes, folders = [], users = [], roles = [], formFields = [], filters: serverFilters, openDocId }) {
     const { isMobile, isTablet } = useResponsive();
     // Classes the user's role may file documents into (folder "manage" grant).
     const manageableTypes = documentTypes.filter(t => t.can_manage !== false);
@@ -150,7 +150,7 @@ export default function DocumentsIndex({ documents, documentTypes, users = [], r
                         onAddNew={manageableTypes.length ? () => setShowUploadModal(true) : null}
                         documentTypes={documentTypes} 
                     />
-                    <DocumentTable documents={filtered} documentTypes={documentTypes} users={users} roles={roles} formFields={formFields} />
+                    <DocumentTable documents={filtered} documentTypes={documentTypes} folders={folders} users={users} roles={roles} formFields={formFields} />
                 </div>
             </div>
 
@@ -158,6 +158,7 @@ export default function DocumentsIndex({ documents, documentTypes, users = [], r
             {showUploadModal && (
                 <UploadModal
                     documentTypes={manageableTypes}
+                    folders={folders.filter(f => f.can_manage !== false)}
                     users={users}
                     roles={roles}
                     formFields={formFields}
@@ -175,7 +176,7 @@ export default function DocumentsIndex({ documents, documentTypes, users = [], r
 }
 
 // ── Upload Modal Wrapper ──────────────────────────────────────────────────────
-function UploadModal({ documentTypes, users, roles, formFields, onClose }) {
+function UploadModal({ documentTypes, folders, users, roles, formFields, onClose }) {
     const handleKey = useCallback(e => { if (e.key === 'Escape') onClose(); }, [onClose]);
     
     useEffect(() => {
@@ -204,6 +205,7 @@ function UploadModal({ documentTypes, users, roles, formFields, onClose }) {
                 <div style={{ padding: '1.25rem', maxHeight: 'calc(100vh - 160px)', overflowY: 'auto' }}>
                     <UploadPanel
                         documentTypes={documentTypes}
+                        folders={folders}
                         users={users}
                         roles={roles}
                         formFields={formFields}

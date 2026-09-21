@@ -24,6 +24,7 @@ Route::prefix('v1')->middleware('api.client')->group(function () {
     Route::get('/me',             [MetaApiController::class, 'me']);
     Route::get('/form-fields',    [MetaApiController::class, 'formFields']);
     Route::get('/document-types', [MetaApiController::class, 'documentTypes']);
+    Route::get('/folders',        [MetaApiController::class, 'folders']);
     Route::get('/users',          [MetaApiController::class, 'users']);
     Route::get('/roles',          [MetaApiController::class, 'roles']);
 

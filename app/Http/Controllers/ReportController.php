@@ -41,10 +41,10 @@ class ReportController extends Controller
             });
 
         // ── Document List per Type ─────────────────────────────────────────
-        $documentList = Document::with(['documentType', 'owner', 'codes'])
+        $documentList = Document::with(['documentType', 'folder', 'owner', 'codes'])
             ->when($request->dl_type,  fn ($q) => $q->whereHas('documentType', fn ($q2) => $q2->where('name', $request->dl_type)))
             ->when($request->dl_label, fn ($q) => $q->where('name', 'like', "%{$request->dl_label}%"))
-            ->when($request->dl_dept,  fn ($q) => $q->where('department', 'like', "%{$request->dl_dept}%"))
+            ->when($request->dl_dept,  fn ($q) => $q->whereHas('folder', fn ($q2) => $q2->where('name', 'like', "%{$request->dl_dept}%")))
             ->when($request->dl_from,  fn ($q) => $q->whereDate('created_at', '>=', $request->dl_from))
             ->when($request->dl_to,    fn ($q) => $q->whereDate('created_at', '<=', $request->dl_to))
             ->latest()
@@ -54,7 +54,7 @@ class ReportController extends Controller
                 'codes'        => $d->codes->map->toDisplayArray()->all(),
                 'label'        => $d->name,
                 'type'         => $d->documentType->name,
-                'department'   => $d->department ?? '—',
+                'department'   => $d->folder?->name ?? '—',
                 'owner'        => $d->owner->name,
                 'documentDate' => SystemSetting::formatDate($d->created_at),
             ]);
@@ -113,10 +113,10 @@ class ReportController extends Controller
     {
         abort_if(! auth()->user()->hasRole('admin'), 403);
 
-        $rows = Document::with(['documentType', 'owner', 'codes'])
+        $rows = Document::with(['documentType', 'folder', 'owner', 'codes'])
             ->when($request->dl_type,  fn ($q) => $q->whereHas('documentType', fn ($q2) => $q2->where('name', $request->dl_type)))
             ->when($request->dl_label, fn ($q) => $q->where('name', 'like', "%{$request->dl_label}%"))
-            ->when($request->dl_dept,  fn ($q) => $q->where('department', 'like', "%{$request->dl_dept}%"))
+            ->when($request->dl_dept,  fn ($q) => $q->whereHas('folder', fn ($q2) => $q2->where('name', 'like', "%{$request->dl_dept}%")))
             ->when($request->dl_from,  fn ($q) => $q->whereDate('created_at', '>=', $request->dl_from))
             ->when($request->dl_to,    fn ($q) => $q->whereDate('created_at', '<=', $request->dl_to))
             ->latest()
@@ -126,7 +126,7 @@ class ReportController extends Controller
                 $d->codes->pluck('code_id')->implode(', ') ?: '—',
                 $d->name,
                 $d->documentType->name,
-                $d->department ?? '—',
+                $d->folder?->name ?? '—',
                 $d->owner->name,
                 SystemSetting::formatDate($d->created_at),
             ]);

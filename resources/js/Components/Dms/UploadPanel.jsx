@@ -1,7 +1,7 @@
 import { useForm } from '@inertiajs/react';
 import DynamicFormFields, { emptyFormData, labelStyle } from './DynamicFormFields';
 
-export default function UploadPanel({ documentTypes, users = [], roles = [], formFields = [], onSuccess }) {
+export default function UploadPanel({ documentTypes, folders = [], users = [], roles = [], formFields = [], onSuccess }) {
     // Field list is admin-managed (Settings → Document Form). code_types is not —
     // the tracking code is a fixed part of every document. Tick both to have a
     // QR code and a barcode issued for the same document.
@@ -16,7 +16,7 @@ export default function UploadPanel({ documentTypes, users = [], roles = [], for
             : [...data.code_types, type]);
     }
 
-    const sources = { document_types: documentTypes, users, roles };
+    const sources = { document_types: documentTypes, folders, users, roles };
 
     function handleSubmit(e) {
         e.preventDefault();

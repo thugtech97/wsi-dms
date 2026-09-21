@@ -20,7 +20,8 @@ class DocumentResource extends JsonResource
         return [
             'id'                => $this->id,
             'label'             => $this->name,
-            'department'        => $this->department,
+            'department'        => $this->folder?->name,
+            'folder_id'         => $this->folder_id,
             'document_type'     => $this->whenLoaded('documentType', fn () => [
                 'id'   => $this->documentType->id,
                 'name' => $this->documentType->name,

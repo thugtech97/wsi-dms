@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Models\DocumentType;
+use App\Models\Folder;
 use App\Models\User;
 use App\Support\DocumentSchema;
 use Illuminate\Http\JsonResponse;
@@ -64,6 +65,13 @@ class MetaApiController extends ApiController
     {
         return $this->ok(
             DocumentType::orderBy('name')->get(['id', 'name'])->all(),
+        );
+    }
+
+    public function folders(): JsonResponse
+    {
+        return $this->ok(
+            Folder::orderBy('name')->get(['id', 'name'])->all(),
         );
     }
 

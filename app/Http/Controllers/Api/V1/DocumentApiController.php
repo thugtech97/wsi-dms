@@ -42,7 +42,7 @@ class DocumentApiController extends ApiController
         $direction = str_starts_with($sort, '-') ? 'desc' : 'asc';
 
         $documents = $this->scope($request)
-            ->with(['documentType', 'owner', 'apiClient', 'codes'])
+            ->with(['documentType', 'folder', 'owner', 'apiClient', 'codes'])
             ->when($request->q, fn ($q, $term) => $q->where(fn ($w) => $w
                 ->where('name', 'like', "%{$term}%")
                 ->orWhereHas('codes', fn ($c) => $c
@@ -50,7 +50,7 @@ class DocumentApiController extends ApiController
                     ->orWhere('code_value', 'like', "%{$term}%"))))
             ->when($request->type, fn ($q, $type) => $q->whereHas('documentType', fn ($t) => $t->where('name', $type)))
             ->when($request->type_id, fn ($q, $id) => $q->where('document_type_id', $id))
-            ->when($request->department, fn ($q, $d) => $q->where('department', 'like', "%{$d}%"))
+            ->when($request->department, fn ($q, $d) => $q->whereHas('folder', fn ($f) => $f->where('name', 'like', "%{$d}%")))
             ->when($request->code_type, fn ($q, $t) => $q->whereHas('codes', fn ($c) => $c->where('type', $t)))
             ->when($request->from, fn ($q, $from) => $q->whereDate('created_at', '>=', $from))
             ->when($request->to, fn ($q, $to) => $q->whereDate('created_at', '<=', $to))
@@ -118,7 +118,7 @@ class DocumentApiController extends ApiController
      */
     public function show(Request $request, int $id): JsonResponse
     {
-        $document = $this->scope($request)->with(['documentType', 'owner', 'apiClient', 'codes'])->find($id);
+        $document = $this->scope($request)->with(['documentType', 'folder', 'owner', 'apiClient', 'codes'])->find($id);
 
         if (! $document) {
             return $this->fail('Document not found.', 404);
@@ -134,7 +134,7 @@ class DocumentApiController extends ApiController
     public function lookup(Request $request, string $code): JsonResponse
     {
         $document = $this->scope($request)
-            ->with(['documentType', 'owner', 'apiClient', 'codes'])
+            ->with(['documentType', 'folder', 'owner', 'apiClient', 'codes'])
             ->whereHas('codes', fn ($c) => $c->where('code_value', $code)
                 ->orWhere('code_id', $code)
                 ->orWhere('code_id', '#' . ltrim($code, '#')))
