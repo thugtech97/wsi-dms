@@ -243,8 +243,8 @@ export default function SettingsIndex({ settings, systemInfo, formFields = [], f
                                 </Field>
                             </Card>
 
-                            {/* File & Storage Settings */}
-                            <Card title="File & Storage Settings">
+                            {/* File & Storage Settings — hidden for now (no file uploads yet) */}
+                            {/* <Card title="File & Storage Settings">
                                 <Field label={<>Maximum File Size <HelpIcon /></>}>
                                     <Select value={form.max_file_size} onChange={v => set('max_file_size', v)} options={[
                                         ['5','5 MB'],['10','10 MB'],['20','20 MB'],['50','50 MB'],['100','100 MB'],['200','200 MB'],
@@ -257,7 +257,7 @@ export default function SettingsIndex({ settings, systemInfo, formFields = [], f
                                     <span style={{ fontSize: '0.82rem', fontWeight: 500, color: '#334155' }}>Virus Scan for Uploads</span>
                                     <Toggle checked={true} />
                                 </div>
-                            </Card>
+                            </Card> */}
 
                             {/* Backup Settings */}
                             <Card title="Backup Settings">
