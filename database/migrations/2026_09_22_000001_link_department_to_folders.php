@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\DocumentFormField;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
@@ -20,15 +19,24 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('documents', function (Blueprint $table) {
-            $table->foreignId('folder_id')->nullable()->after('document_type_id')
-                  ->constrained()->nullOnDelete();
+            $foreign = $table->foreignId('folder_id')->nullable()->after('document_type_id')
+                             ->constrained();
+
+            // SQL Server refuses ON DELETE SET NULL here: folders already reach
+            // documents through document_types, and it allows only one cascade
+            // path. FolderController clears folder_id before deleting instead.
+            DB::getDriverName() === 'sqlsrv'
+                ? $foreign->noActionOnDelete()
+                : $foreign->nullOnDelete();
         });
 
         // Every document already sits in a folder through its document type.
         DB::statement('
-            UPDATE documents d
-            JOIN document_types t ON t.id = d.document_type_id
-            SET d.folder_id = t.folder_id
+            UPDATE documents
+            SET folder_id = (
+                SELECT t.folder_id FROM document_types t
+                WHERE t.id = documents.document_type_id
+            )
         ');
 
         // The built-in Department field now draws its choices from folders.
@@ -76,9 +84,11 @@ return new class extends Migration
         });
 
         DB::statement('
-            UPDATE documents d
-            JOIN folders f ON f.id = d.folder_id
-            SET d.department = f.name
+            UPDATE documents
+            SET department = (
+                SELECT f.name FROM folders f
+                WHERE f.id = documents.folder_id
+            )
         ');
 
         DB::table('document_form_fields')->where('key', 'department')->update([

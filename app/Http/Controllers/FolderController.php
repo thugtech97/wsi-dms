@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Document;
 use App\Models\Folder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Role;
 
 class FolderController extends Controller
@@ -63,7 +65,13 @@ class FolderController extends Controller
     public function destroy(Folder $folder)
     {
         abort_if(! auth()->user()->hasRole('admin'), 403);
-        $folder->delete();
+
+        // SQL Server can't null this on delete itself (see the
+        // link_department_to_folders migration), so unlink documents first.
+        DB::transaction(function () use ($folder) {
+            Document::where('folder_id', $folder->id)->update(['folder_id' => null]);
+            $folder->delete();
+        });
 
         return back();
     }
