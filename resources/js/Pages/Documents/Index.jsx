@@ -268,8 +268,8 @@ function ScanResultModal({ doc, onClose }) {
                 {/* Doc info */}
                 <div style={{ padding: '1rem 1.25rem' }}>
                     <div style={{ fontSize: '0.68rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 4 }}>Document</div>
-                    <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.95rem', marginBottom: 2, wordBreak: 'break-word' }}>{doc.name}</div>
-                    <div style={{ fontSize: '0.78rem', color: '#64748b' }}>{doc.type} · {doc.owner} · {doc.indexedOn}</div>
+                    <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.95rem', marginBottom: 2, wordBreak: 'break-word' }}>{doc.label}</div>
+                    <div style={{ fontSize: '0.78rem', color: '#64748b' }}>{doc.type} · {doc.owner} · {doc.documentDate}</div>
                 </div>
 
                 {/* Actions */}
